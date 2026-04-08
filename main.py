@@ -63,10 +63,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(auth_router)
-app.include_router(criativos_router)
-app.include_router(artes_router)
-app.include_router(chat_router)
+app.include_router(auth_router, prefix="/api")
+app.include_router(criativos_router, prefix="/api")
+app.include_router(artes_router, prefix="/api")
+app.include_router(chat_router, prefix="/api")
 
 # Serve generated images
 images_dir = os.path.join(os.path.dirname(__file__), "generated_images")
