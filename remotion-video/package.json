@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "description": "Remotion video compositions for Creative Machine marketing videos",
   "scripts": {
-    "preview": "remotion preview src/Root.tsx",
-    "render": "remotion render src/Root.tsx"
+    "preview": "remotion preview src/index.tsx",
+    "render": "remotion render src/index.tsx"
   },
   "dependencies": {
     "react": "^18.3.0",

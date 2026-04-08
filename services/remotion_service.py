@@ -29,7 +29,7 @@ class RemotionService:
 
         cmd = [
             "npx", "remotion", "render",
-            "src/Root.tsx",
+            "src/index.tsx",
             composition_id,
             output_path,
             "--props", json.dumps(props),
@@ -70,7 +70,7 @@ class RemotionService:
 
         cmd = [
             "npx", "remotion", "still",
-            "src/Root.tsx",
+            "src/index.tsx",
             composition_id,
             output_path,
             "--props", json.dumps(props),
