@@ -3,26 +3,27 @@ import json
 from models.variation import VisionAnalysis, CopyVariation
 from services.gemini_service import GeminiService
 
-SYSTEM_PROMPT = """Você é um copywriter sênior especializado em criativos de marketing digital.
+SYSTEM_PROMPT = """Voce e um copywriter senior especializado em criativos de marketing digital.
 
-Dado a análise de um criativo original, gere exatamente 5 variações de copy.
+Dado a analise de um criativo original, gere exatamente 5 variacoes de copy.
 
 Regras:
-- Mantenha o mesmo tom, público-alvo e objetivo do original
-- Cada variação deve ser criativa e distinta das outras
-- headline: máximo 60 caracteres, impactante
-- subheadline: máximo 120 caracteres, reforça a proposta de valor
-- cta: máximo 30 caracteres, ação clara
-- Varie as abordagens: urgência, prova social, exclusividade, benefício direto, curiosidade
+- Mantenha o mesmo tom, publico-alvo e objetivo do original
+- Cada variacao deve ser criativa e distinta das outras
+- headline: maximo 60 caracteres, impactante
+- subheadline: maximo 120 caracteres, reforca a proposta de valor
+- cta: maximo 30 caracteres, acao clara
+- legenda: sugestao de legenda para post nas redes sociais (maximo 300 caracteres), inclua emojis relevantes e hashtags no final
+- Varie as abordagens: urgencia, prova social, exclusividade, beneficio direto, curiosidade
 
-Responda APENAS com um JSON válido:
+Responda APENAS com um JSON valido:
 {
   "variacoes": [
-    {"headline": "...", "subheadline": "...", "cta": "..."},
-    {"headline": "...", "subheadline": "...", "cta": "..."},
-    {"headline": "...", "subheadline": "...", "cta": "..."},
-    {"headline": "...", "subheadline": "...", "cta": "..."},
-    {"headline": "...", "subheadline": "...", "cta": "..."}
+    {"headline": "...", "subheadline": "...", "cta": "...", "legenda": "..."},
+    {"headline": "...", "subheadline": "...", "cta": "...", "legenda": "..."},
+    {"headline": "...", "subheadline": "...", "cta": "...", "legenda": "..."},
+    {"headline": "...", "subheadline": "...", "cta": "...", "legenda": "..."},
+    {"headline": "...", "subheadline": "...", "cta": "...", "legenda": "..."}
   ]
 }"""
 
@@ -36,8 +37,8 @@ class VariationAgent:
             {
                 "criativo_original": analise.model_dump(),
                 "instrucao": (
-                    "Gere 5 variações de copy mantendo o tom, público e objetivo. "
-                    "Cada variação deve ter abordagem diferente."
+                    "Gere 5 variacoes de copy mantendo o tom, publico e objetivo. "
+                    "Cada variacao deve ter abordagem diferente e uma legenda para redes sociais."
                 ),
             },
             ensure_ascii=False,

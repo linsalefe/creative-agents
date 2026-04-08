@@ -31,9 +31,9 @@ class Orchestrator:
         self.image_edit_agent = ImageEditAgent()
 
     async def gerar_criativo(self, request: CreativeRequest) -> CreativeOutput:
-        """Pipeline completo: Strategy → Copy → Creative Director → Format → Image"""
+        """Pipeline completo: Strategy -> Copy -> Creative Director -> Format -> Image"""
 
-        # 1. Estratégia
+        # 1. Estrategia
         estrategia = await self.strategy_agent.run(
             produto=request.produto,
             publico=request.publico,
@@ -48,7 +48,7 @@ class Orchestrator:
             estrategia=estrategia,
         )
 
-        # 3. Direção criativa
+        # 3. Direcao criativa
         direcao = await self.creative_director_agent.run(
             produto=request.produto,
             estrategia=estrategia,
@@ -77,7 +77,7 @@ class Orchestrator:
         )
 
     async def gerar_rapido(self, request: CreativeRequest) -> CreativeOutput:
-        """Pipeline rápido: Strategy → Copy → Format → Image (sem direção criativa detalhada)"""
+        """Pipeline rapido: Strategy -> Copy -> Format -> Image (sem direcao criativa detalhada)"""
 
         estrategia = await self.strategy_agent.run(
             produto=request.produto,
@@ -96,11 +96,11 @@ class Orchestrator:
             plataforma=estrategia.plataforma,
         )
 
-        # Gera imagem direto com prompt genérico (sem creative director)
+        # Gera imagem direto com prompt generico (sem creative director)
         from models.creative_output import CreativeDirectorOutput
 
         direcao = CreativeDirectorOutput(
-            conceito="Geração rápida sem direção criativa detalhada",
+            conceito="Geracao rapida sem direcao criativa detalhada",
             cores_dominantes=["#333333", "#FFFFFF", "#0066CC"],
             estilo_visual="clean, profissional, moderno",
             elementos_visuais="produto em destaque",
@@ -132,40 +132,70 @@ class Orchestrator:
         mime_type: str,
         formato: str = "feed",
     ) -> VariationOutput:
-        """Pipeline de variações: Vision → Variation → 5x Image Edit em paralelo"""
+        """Pipeline de variacoes: Vision -> Variation -> Image Edit em paralelo"""
 
-        # 1. Analisa o criativo original com Gemini Vision
+        # 1. Analisa o criativo original
         analise = await self.vision_agent.run(image_data=image_data, mime_type=mime_type)
 
-        # 2. Gera 5 variações de copy
+        # 2. Gera 5 variacoes de copy com legendas
         variacoes_copy = await self.variation_agent.run(analise=analise)
 
-        # 3. Edita imagem em paralelo com semáforo para rate limit
+        # 3. Edita imagens em paralelo
         semaphore = asyncio.Semaphore(2)
         images_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "generated_images")
         os.makedirs(images_dir, exist_ok=True)
 
+        async def salvar_imagem(edited_bytes: bytes) -> str:
+            filename = f"{uuid.uuid4()}.png"
+            filepath = os.path.join(images_dir, filename)
+            with open(filepath, "wb") as f:
+                f.write(edited_bytes)
+            return f"/static/images/{filename}"
+
         async def processar_variacao(copy_var: CopyVariation) -> VariationItem:
             async with semaphore:
                 try:
-                    edited_bytes = await self.image_edit_agent.run(
-                        original_image=image_data,
-                        mime_type=mime_type,
-                        original_analysis=analise,
-                        new_copy=copy_var,
-                        target_format=formato,
-                    )
-                    filename = f"{uuid.uuid4()}.png"
-                    filepath = os.path.join(images_dir, filename)
-                    with open(filepath, "wb") as f:
-                        f.write(edited_bytes)
-                    return VariationItem(
-                        copy=copy_var,
-                        imagem_url=f"/static/images/{filename}",
-                        formato=formato,
-                    )
+                    if formato == "ambos":
+                        # Gera feed e story em paralelo para a mesma copy
+                        feed_task = self.image_edit_agent.run(
+                            original_image=image_data,
+                            mime_type=mime_type,
+                            original_analysis=analise,
+                            new_copy=copy_var,
+                            target_format="feed",
+                        )
+                        story_task = self.image_edit_agent.run(
+                            original_image=image_data,
+                            mime_type=mime_type,
+                            original_analysis=analise,
+                            new_copy=copy_var,
+                            target_format="story",
+                        )
+                        feed_bytes, story_bytes = await asyncio.gather(feed_task, story_task)
+                        feed_url = await salvar_imagem(feed_bytes)
+                        story_url = await salvar_imagem(story_bytes)
+                        return VariationItem(
+                            copy=copy_var,
+                            imagem_url=feed_url,
+                            imagem_story_url=story_url,
+                            formato=formato,
+                        )
+                    else:
+                        edited_bytes = await self.image_edit_agent.run(
+                            original_image=image_data,
+                            mime_type=mime_type,
+                            original_analysis=analise,
+                            new_copy=copy_var,
+                            target_format=formato,
+                        )
+                        url = await salvar_imagem(edited_bytes)
+                        return VariationItem(
+                            copy=copy_var,
+                            imagem_url=url,
+                            formato=formato,
+                        )
                 except Exception as e:
-                    print(f"Edição de imagem falhou para variação: {e}")
+                    print(f"Edicao de imagem falhou para variacao: {e}")
                     return VariationItem(copy=copy_var, imagem_url=None, formato=formato)
 
         variacoes = await asyncio.gather(

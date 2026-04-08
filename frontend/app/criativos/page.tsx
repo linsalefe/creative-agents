@@ -56,14 +56,14 @@ interface CreativeOutput {
     cores_dominantes: string[];
     estilo_visual: string;
     elementos_visuais: string;
-    prompt_ideogram: string;
+    [key: string]: unknown;
   };
   formato: {
     formato: string;
     dimensoes: string;
-    template_bannerbear: string;
     variantes: string[];
     especificacoes: Record<string, unknown>;
+    [key: string]: unknown;
   };
   imagem: {
     imagem_url: string;
@@ -106,9 +106,9 @@ const AGENT_DURATIONS = [3000, 4000, 5000, 2000, 8000];
 
 const VARIATION_AGENT_IDS = ["vision", "variation", "generation"] as const;
 const VARIATION_AGENT_LABELS: Record<string, string> = {
-  vision: "Analise (Nano Banana Pro)",
-  variation: "Copys (Nano Banana Pro)",
-  generation: "Edicao (Nano Banana Pro)",
+  vision: "Análise do Criativo",
+  variation: "Geração de Copys",
+  generation: "Criação das Artes",
 };
 
 export default function CriativosPage() {
@@ -342,15 +342,15 @@ export default function CriativosPage() {
             </div>
             <div>
               <h1 className="text-lg font-semibold text-text-primary">
-                Creative Agents
+                Criar Criativo
               </h1>
               <p className="text-xs text-text-muted">
-                Pipeline multi-agente de criativos
+                Geração automatizada de criativos com IA
               </p>
             </div>
           </div>
           <Badge variant="accent" className="text-xs">
-            7 agentes
+            IA Avançada
           </Badge>
         </div>
       </header>
@@ -362,7 +362,7 @@ export default function CriativosPage() {
             <CardHeader>
               <CardTitle className="text-xl">Novo Criativo</CardTitle>
               <CardDescription>
-                Preencha o briefing e os agentes fazem o resto.
+                Preencha o briefing e a IA gera o criativo completo.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -426,7 +426,7 @@ export default function CriativosPage() {
           <section className="animate-fade-in">
             <Card className="glow-accent">
               <CardHeader>
-                <CardTitle className="text-base">Pipeline em execucao</CardTitle>
+                <CardTitle className="text-base">Gerando seu criativo...</CardTitle>
               </CardHeader>
               <CardContent>
                 <AgentProgress steps={agentSteps} />
@@ -652,7 +652,7 @@ export default function CriativosPage() {
           <section className="animate-fade-in">
             <Card className="glow-accent">
               <CardHeader>
-                <CardTitle className="text-base">Pipeline de variacoes</CardTitle>
+                <CardTitle className="text-base">Gerando variações...</CardTitle>
               </CardHeader>
               <CardContent>
                 <AgentProgress steps={varSteps} />
@@ -695,8 +695,6 @@ export default function CriativosPage() {
                   <DetailRow label="Tom" value={varResult.analise.tom} />
                   <DetailRow label="Publico" value={varResult.analise.publico} />
                   <DetailRow label="Objetivo" value={varResult.analise.objetivo} />
-                  <DetailRow label="Estilo Visual" value={varResult.analise.estilo_visual} />
-                  <DetailRow label="Fundo Original" value={varResult.analise.descricao_fundo} />
                 </div>
               </CardContent>
             </Card>

@@ -28,11 +28,11 @@ const AGENT_ICONS: Record<string, React.ElementType> = {
 };
 
 const DEFAULT_STEPS: AgentStep[] = [
-  { id: "strategy", label: "Strategy", status: "pending" },
-  { id: "copy", label: "Copy", status: "pending" },
-  { id: "creative_director", label: "Creative Director", status: "pending" },
-  { id: "format", label: "Format", status: "pending" },
-  { id: "image", label: "Image", status: "pending" },
+  { id: "strategy", label: "Estratégia", status: "pending" },
+  { id: "copy", label: "Copywriting", status: "pending" },
+  { id: "creative_director", label: "Direção Visual", status: "pending" },
+  { id: "format", label: "Formato", status: "pending" },
+  { id: "image", label: "Arte Final", status: "pending" },
 ];
 
 interface AgentProgressProps {
