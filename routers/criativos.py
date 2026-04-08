@@ -16,12 +16,18 @@ CREDIT_COST = 10
 
 
 async def _check_and_deduct_credits(user: User, db: AsyncSession) -> None:
-    if user.credits < CREDIT_COST:
+    from sqlalchemy import select as sa_select
+    # Recarrega o user na sessão correta para garantir o commit
+    result = await db.execute(sa_select(User).where(User.id == user.id))
+    db_user = result.scalar_one_or_none()
+    if not db_user:
+        raise HTTPException(status_code=401, detail="Usuário não encontrado")
+    if db_user.credits < CREDIT_COST:
         raise HTTPException(
             status_code=402,
             detail="Créditos insuficientes. Você precisa de pelo menos 10 créditos para gerar um criativo.",
         )
-    user.credits -= CREDIT_COST
+    db_user.credits -= CREDIT_COST
     await db.commit()
 
 orchestrator = Orchestrator()
