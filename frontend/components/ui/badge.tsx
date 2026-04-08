@@ -1,26 +1,39 @@
-import { type HTMLAttributes } from "react";
+import * as React from "react";
+import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
-interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
-  variant?: "default" | "accent" | "success" | "muted";
-}
+const badgeVariants = cva(
+  "inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+  {
+    variants: {
+      variant: {
+        default:
+          "border-transparent bg-primary text-primary-foreground shadow",
+        secondary:
+          "border-transparent bg-secondary text-secondary-foreground",
+        destructive:
+          "border-transparent bg-destructive text-destructive-foreground shadow",
+        outline: "text-foreground",
+        success: "border-transparent bg-emerald-500/15 text-emerald-500",
+        accent: "border-transparent bg-primary/15 text-primary",
+        muted: "border-transparent bg-muted text-muted-foreground",
+        amber: "border-transparent bg-amber-500/15 text-amber-500",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+    },
+  }
+);
 
-function Badge({ className, variant = "default", ...props }: BadgeProps) {
+export interface BadgeProps
+  extends React.HTMLAttributes<HTMLDivElement>,
+    VariantProps<typeof badgeVariants> {}
+
+function Badge({ className, variant, ...props }: BadgeProps) {
   return (
-    <span
-      className={cn(
-        "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors",
-        {
-          "bg-white/10 text-text-secondary": variant === "default",
-          "bg-accent/15 text-accent-light": variant === "accent",
-          "bg-emerald-500/15 text-emerald-400": variant === "success",
-          "bg-white/5 text-text-muted": variant === "muted",
-        },
-        className
-      )}
-      {...props}
-    />
+    <div className={cn(badgeVariants({ variant }), className)} {...props} />
   );
 }
 
-export { Badge };
+export { Badge, badgeVariants };

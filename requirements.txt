@@ -6,3 +6,9 @@ openai
 python-dotenv
 pydantic
 google-genai
+sqlalchemy[asyncio]
+asyncpg
+python-jose[cryptography]
+passlib[bcrypt]
+bcrypt==4.0.1
+pgvector
