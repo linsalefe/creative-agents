@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; }
+  #map { width: 100vw; height: 100vh; }
+</style>
+<script>
+  var USE_OSM = __USE_OSM__;
+</script>
+<script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
+<link href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css" rel="stylesheet">
+</head>
+<body>
+<div id="map"></div>
+<script>
+(function() {
+  // Injected data
+  var MAPBOX_TOKEN = '__MAPBOX_TOKEN__';
+  var MAP_SCRIPT = __MAP_SCRIPT__;
+  var TOTAL_FRAMES = __TOTAL_FRAMES__;
+  var STYLE_URL = '__STYLE_URL__';
+
+  window.mapReady = false;
+  window.frameReady = false;
+  window.totalFrames = TOTAL_FRAMES;
+
+  var fps = MAP_SCRIPT.fps || 30;
+  var duration = MAP_SCRIPT.duracao_segundos;
+  var keyframes = MAP_SCRIPT.keyframes;
+  var highlights = MAP_SCRIPT.highlights || [];
+
+  // Initialize map
+  if (!USE_OSM && MAPBOX_TOKEN) {
+    mapboxgl.accessToken = MAPBOX_TOKEN;
+  }
+
+  var firstKf = keyframes[0];
+  var map = new mapboxgl.Map({
+    container: 'map',
+    style: USE_OSM
+      ? { version: 8, sources: { osm: { type: 'raster', tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize: 256 } }, layers: [{ id: 'osm', type: 'raster', source: 'osm' }] }
+      : STYLE_URL,
+    center: [firstKf.longitude, firstKf.latitude],
+    zoom: firstKf.zoom,
+    pitch: firstKf.pitch || 0,
+    bearing: firstKf.bearing || 0,
+    interactive: false,
+    attributionControl: false,
+    logoPosition: 'bottom-left',
+    preserveDrawingBuffer: true,
+    fadeDuration: 0
+  });
+
+  // Hide logo and attribution
+  map.on('load', function() {
+    // Add highlight layers
+    highlights.forEach(function(h, idx) {
+      if (h.geojson) {
+        var sourceId = 'highlight-' + idx;
+        map.addSource(sourceId, { type: 'geojson', data: h.geojson });
+
+        if (h.tipo === 'area') {
+          map.addLayer({
+            id: 'highlight-fill-' + idx,
+            type: 'fill',
+            source: sourceId,
+            paint: { 'fill-color': h.cor, 'fill-opacity': 0 }
+          });
+          map.addLayer({
+            id: 'highlight-line-' + idx,
+            type: 'line',
+            source: sourceId,
+            paint: { 'line-color': h.cor, 'line-width': 2, 'line-opacity': 0 }
+          });
+        } else if (h.tipo === 'point') {
+          map.addLayer({
+            id: 'highlight-circle-' + idx,
+            type: 'circle',
+            source: sourceId,
+            paint: { 'circle-color': h.cor, 'circle-radius': 8, 'circle-opacity': 0 }
+          });
+        } else if (h.tipo === 'route') {
+          map.addLayer({
+            id: 'highlight-route-' + idx,
+            type: 'line',
+            source: sourceId,
+            paint: { 'line-color': h.cor, 'line-width': 4, 'line-opacity': 0 }
+          });
+        }
+      }
+    });
+
+    window.mapReady = true;
+  });
+
+  // Interpolation helpers
+  function lerp(a, b, t) {
+    return a + (b - a) * t;
+  }
+
+  function easeInOutCubic(t) {
+    return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  }
+
+  function getInterpolatedCamera(currentTime) {
+    // Find surrounding keyframes
+    var prev = keyframes[0];
+    var next = keyframes[keyframes.length - 1];
+
+    for (var i = 0; i < keyframes.length - 1; i++) {
+      if (currentTime >= keyframes[i].tempo && currentTime <= keyframes[i + 1].tempo) {
+        prev = keyframes[i];
+        next = keyframes[i + 1];
+        break;
+      }
+    }
+
+    if (currentTime <= prev.tempo) {
+      return { lat: prev.latitude, lng: prev.longitude, zoom: prev.zoom, pitch: prev.pitch, bearing: prev.bearing };
+    }
+    if (currentTime >= next.tempo) {
+      return { lat: next.latitude, lng: next.longitude, zoom: next.zoom, pitch: next.pitch, bearing: next.bearing };
+    }
+
+    var segmentDuration = next.tempo - prev.tempo;
+    var t = segmentDuration > 0 ? (currentTime - prev.tempo) / segmentDuration : 0;
+    t = easeInOutCubic(t);
+
+    return {
+      lat: lerp(prev.latitude, next.latitude, t),
+      lng: lerp(prev.longitude, next.longitude, t),
+      zoom: lerp(prev.zoom, next.zoom, t),
+      pitch: lerp(prev.pitch, next.pitch, t),
+      bearing: lerp(prev.bearing, next.bearing, t)
+    };
+  }
+
+  // Frame advance function called by Playwright
+  window.advanceFrame = function(frameNumber) {
+    window.frameReady = false;
+
+    var currentTime = frameNumber / fps;
+    var cam = getInterpolatedCamera(currentTime);
+
+    map.jumpTo({
+      center: [cam.lng, cam.lat],
+      zoom: cam.zoom,
+      pitch: cam.pitch,
+      bearing: cam.bearing
+    });
+
+    // Update highlight visibility based on time
+    highlights.forEach(function(h, idx) {
+      if (!h.geojson) return;
+      var visible = currentTime >= h.tempo_inicio;
+      var opacity = visible ? 0.6 : 0;
+
+      if (h.tipo === 'area') {
+        if (map.getLayer('highlight-fill-' + idx)) {
+          map.setPaintProperty('highlight-fill-' + idx, 'fill-opacity', visible ? 0.3 : 0);
+          map.setPaintProperty('highlight-line-' + idx, 'line-opacity', opacity);
+        }
+      } else if (h.tipo === 'point') {
+        if (map.getLayer('highlight-circle-' + idx)) {
+          map.setPaintProperty('highlight-circle-' + idx, 'circle-opacity', opacity);
+        }
+      } else if (h.tipo === 'route') {
+        if (map.getLayer('highlight-route-' + idx)) {
+          map.setPaintProperty('highlight-route-' + idx, 'line-opacity', opacity);
+        }
+      }
+    });
+
+    // Wait a tick for the map to render, then signal ready
+    requestAnimationFrame(function() {
+      // Give map tiles a moment to render
+      setTimeout(function() {
+        window.frameReady = true;
+      }, 50);
+    });
+  };
+})();
+</script>
+</body>
+</html>

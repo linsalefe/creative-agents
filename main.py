@@ -9,6 +9,7 @@ from routers.criativos import router as criativos_router
 from routers.auth import router as auth_router
 from routers.artes import router as artes_router
 from routers.chat import router as chat_router
+from routers.videos import router as videos_router
 
 
 @asynccontextmanager
@@ -69,6 +70,7 @@ app.include_router(auth_router, prefix="/api")
 app.include_router(criativos_router, prefix="/api")
 app.include_router(artes_router, prefix="/api")
 app.include_router(chat_router, prefix="/api")
+app.include_router(videos_router, prefix="/api")
 
 # Serve generated images
 images_dir = os.path.join(os.path.dirname(__file__), "generated_images")
@@ -79,6 +81,11 @@ app.mount("/static/images", StaticFiles(directory=images_dir), name="images")
 artes_dir = os.path.join(os.path.dirname(__file__), "uploaded_artes")
 os.makedirs(artes_dir, exist_ok=True)
 app.mount("/static/artes", StaticFiles(directory=artes_dir), name="artes")
+
+# Serve generated videos
+videos_dir = os.path.join(os.path.dirname(__file__), "generated_videos")
+os.makedirs(videos_dir, exist_ok=True)
+app.mount("/static/videos", StaticFiles(directory=videos_dir), name="videos")
 
 
 @app.get("/")
