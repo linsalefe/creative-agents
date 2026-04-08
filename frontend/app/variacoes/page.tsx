@@ -35,6 +35,7 @@ interface CopyVariation {
 interface VariationItem {
   copy: CopyVariation;
   imagem_url: string | null;
+  formato: "feed" | "story";
 }
 
 interface VisionAnalysis {
@@ -53,6 +54,7 @@ interface VariationOutput {
   original_url: string;
   analise: VisionAnalysis;
   variacoes: VariationItem[];
+  formato: "feed" | "story";
 }
 
 type StepStatus = "pending" | "active" | "completed";
@@ -85,6 +87,9 @@ function formatFileSize(bytes: number): string {
 export default function VariacoesPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
+
+  // Format state
+  const [formato, setFormato] = useState<"feed" | "story">("feed");
 
   // Upload state
   const [file, setFile] = useState<File | null>(null);
@@ -192,6 +197,7 @@ export default function VariacoesPage() {
     try {
       const formData = new FormData();
       formData.append("file", file);
+      formData.append("formato", formato);
 
       const { data } = await api.post<VariationOutput>(
         "/criativos/variacoes",
@@ -361,6 +367,62 @@ export default function VariacoesPage() {
                 </div>
               )}
 
+              {/* Format selector */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">Formato de saída</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setFormato("feed")}
+                    className={`relative flex flex-col items-center justify-center gap-2 p-4 rounded-xl border-2 transition-all duration-200 ${
+                      formato === "feed"
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border hover:border-primary/40 text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <div className={`w-10 h-10 rounded-lg border-2 flex items-center justify-center transition-colors ${
+                      formato === "feed" ? "border-primary bg-primary/20" : "border-muted-foreground/40"
+                    }`}>
+                      <div className={`w-6 h-6 rounded ${formato === "feed" ? "bg-primary/60" : "bg-muted-foreground/30"}`} />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm font-semibold">Feed</p>
+                      <p className="text-xs opacity-70">Quadrado 1:1</p>
+                    </div>
+                    {formato === "feed" && (
+                      <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-primary flex items-center justify-center">
+                        <Check className="w-2.5 h-2.5 text-white" />
+                      </div>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setFormato("story")}
+                    className={`relative flex flex-col items-center justify-center gap-2 p-4 rounded-xl border-2 transition-all duration-200 ${
+                      formato === "story"
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border hover:border-primary/40 text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <div className={`w-6 h-10 rounded-lg border-2 flex items-center justify-center transition-colors ${
+                      formato === "story" ? "border-primary bg-primary/20" : "border-muted-foreground/40"
+                    }`}>
+                      <div className={`w-3.5 h-6 rounded ${formato === "story" ? "bg-primary/60" : "bg-muted-foreground/30"}`} />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm font-semibold">Story</p>
+                      <p className="text-xs opacity-70">Vertical 9:16</p>
+                    </div>
+                    {formato === "story" && (
+                      <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-primary flex items-center justify-center">
+                        <Check className="w-2.5 h-2.5 text-white" />
+                      </div>
+                    )}
+                  </button>
+                </div>
+              </div>
+
               {/* Generate button */}
               <Button
                 type="submit"
@@ -380,8 +442,11 @@ export default function VariacoesPage() {
         {loading && (
           <Card className="animate-fade-in glow-primary border border-border">
             <CardHeader>
-              <CardTitle className="text-base">
+              <CardTitle className="text-base flex items-center gap-2">
                 Pipeline de variações em execução
+                <Badge variant="outline" className="text-xs">
+                  {formato === "story" ? "Story 9:16" : "Feed 1:1"}
+                </Badge>
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -458,6 +523,9 @@ export default function VariacoesPage() {
               <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
                 <Layers className="w-5 h-5 text-violet-400" />
                 {result.variacoes.length} Variações Geradas
+                <Badge variant={result.formato === "story" ? "accent" : "secondary"} className="ml-1">
+                  {result.formato === "story" ? "Story 9:16" : "Feed 1:1"}
+                </Badge>
               </h2>
               <div className="flex items-center gap-3">
                 <Badge variant="success">Completo</Badge>
@@ -490,12 +558,18 @@ export default function VariacoesPage() {
             </Card>
 
             {/* Variation cards grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className={`grid gap-5 ${
+              result.formato === "story"
+                ? "grid-cols-2 sm:grid-cols-3 lg:grid-cols-5"
+                : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+            }`}>
               {result.variacoes.map((item, i) => (
                 <Card key={i} className="group overflow-hidden p-0 border border-border hover:scale-[1.02] hover:shadow-xl transition-all duration-300">
                   {/* Image */}
                   {item.imagem_url ? (
-                    <div className="relative aspect-square bg-secondary overflow-hidden">
+                    <div className={`relative bg-secondary overflow-hidden ${
+                      item.formato === "story" ? "aspect-[9/16]" : "aspect-square"
+                    }`}>
                       <img
                         src={resolveUrl(item.imagem_url)}
                         alt={item.copy.headline}
@@ -516,7 +590,9 @@ export default function VariacoesPage() {
                       </button>
                     </div>
                   ) : (
-                    <div className="aspect-square bg-secondary flex items-center justify-center relative">
+                    <div className={`bg-secondary flex items-center justify-center relative ${
+                      item.formato === "story" ? "aspect-[9/16]" : "aspect-square"
+                    }`}>
                       <PenLine className="w-8 h-8 text-muted-foreground" />
                       <div className="absolute top-3 left-3">
                         <Badge variant="accent" className="text-[10px]">

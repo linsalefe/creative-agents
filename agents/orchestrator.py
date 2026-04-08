@@ -126,7 +126,12 @@ class Orchestrator:
             imagem=imagem,
         )
 
-    async def gerar_variacoes(self, image_data: bytes, mime_type: str) -> VariationOutput:
+    async def gerar_variacoes(
+        self,
+        image_data: bytes,
+        mime_type: str,
+        formato: str = "feed",
+    ) -> VariationOutput:
         """Pipeline de variações: Vision → Variation → 5x Image Edit em paralelo"""
 
         # 1. Analisa o criativo original com Gemini Vision
@@ -148,6 +153,7 @@ class Orchestrator:
                         mime_type=mime_type,
                         original_analysis=analise,
                         new_copy=copy_var,
+                        target_format=formato,
                     )
                     filename = f"{uuid.uuid4()}.png"
                     filepath = os.path.join(images_dir, filename)
@@ -156,10 +162,11 @@ class Orchestrator:
                     return VariationItem(
                         copy=copy_var,
                         imagem_url=f"/static/images/{filename}",
+                        formato=formato,
                     )
                 except Exception as e:
                     print(f"Edição de imagem falhou para variação: {e}")
-                    return VariationItem(copy=copy_var, imagem_url=None)
+                    return VariationItem(copy=copy_var, imagem_url=None, formato=formato)
 
         variacoes = await asyncio.gather(
             *[processar_variacao(cv) for cv in variacoes_copy]
@@ -169,4 +176,5 @@ class Orchestrator:
             original_url="upload",
             analise=analise,
             variacoes=list(variacoes),
+            formato=formato,
         )

@@ -24,9 +24,11 @@ class VariationItem(BaseModel):
     copy: CopyVariation
     fundo_url: str | None = None
     imagem_url: str | None = None
+    formato: str = "feed"
 
 
 class VariationOutput(BaseModel):
     original_url: str
     analise: VisionAnalysis
     variacoes: list[VariationItem]
+    formato: str = "feed"

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.creative_request import CreativeRequest
@@ -16,18 +16,12 @@ CREDIT_COST = 10
 
 
 async def _check_and_deduct_credits(user: User, db: AsyncSession) -> None:
-    from sqlalchemy import select as sa_select
-    # Recarrega o user na sessão correta para garantir o commit
-    result = await db.execute(sa_select(User).where(User.id == user.id))
-    db_user = result.scalar_one_or_none()
-    if not db_user:
-        raise HTTPException(status_code=401, detail="Usuário não encontrado")
-    if db_user.credits < CREDIT_COST:
+    if user.credits < CREDIT_COST:
         raise HTTPException(
             status_code=402,
             detail="Créditos insuficientes. Você precisa de pelo menos 10 créditos para gerar um criativo.",
         )
-    db_user.credits -= CREDIT_COST
+    user.credits -= CREDIT_COST
     await db.commit()
 
 orchestrator = Orchestrator()
@@ -104,6 +98,7 @@ async def gerar_variante(
 @router.post("/variacoes", response_model=VariationOutput)
 async def gerar_variacoes(
     file: UploadFile = File(...),
+    formato: str = Form(default="feed"),
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -113,7 +108,9 @@ async def gerar_variacoes(
         image_data = await file.read()
         mime_type = file.content_type or "image/png"
         resultado = await orchestrator.gerar_variacoes(
-            image_data=image_data, mime_type=mime_type
+            image_data=image_data,
+            mime_type=mime_type,
+            formato=formato,
         )
         return resultado
     except Exception as e:
