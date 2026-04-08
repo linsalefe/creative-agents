@@ -24,6 +24,8 @@ class User(Base):
     password_hash = Column(String(255), nullable=False)
     role = Column(String(50), default="user")
     avatar_url = Column(String(500), nullable=True)
+    credits = Column(Integer, default=1000, nullable=False, server_default="1000")
+    is_active = Column(Boolean, default=True, nullable=False, server_default="true")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     artes = relationship("Arte", back_populates="user", cascade="all, delete-orphan")

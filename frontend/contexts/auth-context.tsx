@@ -16,6 +16,8 @@ interface User {
   email: string;
   role: string;
   avatar_url?: string | null;
+  credits: number;
+  is_active: boolean;
 }
 
 interface AuthContextValue {

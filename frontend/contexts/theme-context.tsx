@@ -7,46 +7,50 @@ type Theme = "light" | "dark";
 interface ThemeContextValue {
   theme: Theme;
   toggleTheme: () => void;
+  setTheme: (t: Theme) => void;
 }
 
-const ThemeContext = createContext<ThemeContextValue | null>(null);
+const ThemeContext = createContext<ThemeContextValue>({
+  theme: "dark",
+  toggleTheme: () => {},
+  setTheme: () => {},
+});
+
+function applyTheme(t: Theme) {
+  const html = document.documentElement;
+  html.classList.remove("dark", "light");
+  html.classList.add(t);
+}
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>("dark");
+  const [theme, setThemeState] = useState<Theme>("dark");
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     const saved = (localStorage.getItem("theme") as Theme) || "dark";
-    setTheme(saved);
+    setThemeState(saved);
     applyTheme(saved);
+    setMounted(true);
   }, []);
 
-  function applyTheme(t: Theme) {
-    const html = document.documentElement;
-    if (t === "dark") {
-      html.classList.add("dark");
-      html.classList.remove("light");
-    } else {
-      html.classList.remove("dark");
-      html.classList.add("light");
-    }
+  function setTheme(t: Theme) {
+    setThemeState(t);
+    applyTheme(t);
+    localStorage.setItem("theme", t);
   }
 
   function toggleTheme() {
     const next = theme === "dark" ? "light" : "dark";
     setTheme(next);
-    applyTheme(next);
-    localStorage.setItem("theme", next);
   }
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
-      {children}
+    <ThemeContext.Provider value={{ theme, toggleTheme, setTheme }}>
+      {mounted ? children : <div style={{ visibility: "hidden" }}>{children}</div>}
     </ThemeContext.Provider>
   );
 }
 
 export function useTheme() {
-  const ctx = useContext(ThemeContext);
-  if (!ctx) throw new Error("useTheme must be used within ThemeProvider");
-  return ctx;
+  return useContext(ThemeContext);
 }

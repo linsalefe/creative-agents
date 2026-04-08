@@ -37,6 +37,8 @@ async def seed_admin():
                 email="admin@cenat.com.br",
                 password_hash=pwd_context.hash("cenat2026"),
                 role="admin",
+                credits=999999,
+                is_active=True,
             )
             db.add(admin)
             await db.commit()

@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Settings, User, Lock } from "lucide-react";
+import { Settings, User, Lock, Coins } from "lucide-react";
 
 export default function ConfiguracoesPage() {
   const { user, loading: authLoading, updateUser } = useAuth();
@@ -140,6 +140,35 @@ export default function ConfiguracoesPage() {
             </p>
           </div>
         </div>
+
+        {/* Credits section */}
+        <Card className="border border-border hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Coins className="w-5 h-5 text-primary" />
+              Seus Creditos
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-3xl font-bold font-mono">{user?.credits?.toLocaleString() ?? 0}</p>
+                <p className="text-sm text-muted-foreground mt-1">creditos disponiveis</p>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Cada arte gerada consome <strong>10 creditos</strong>
+                </p>
+              </div>
+              <div className={`p-4 rounded-full ${(user?.credits ?? 0) < 100 ? 'bg-red-500/10' : (user?.credits ?? 0) < 300 ? 'bg-amber-500/10' : 'bg-green-500/10'}`}>
+                <Coins className={`w-8 h-8 ${(user?.credits ?? 0) < 100 ? 'text-red-400' : (user?.credits ?? 0) < 300 ? 'text-amber-400' : 'text-green-400'}`} />
+              </div>
+            </div>
+            {(user?.credits ?? 0) < 100 && (
+              <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                <p className="text-xs text-red-400 font-medium">Creditos baixos! Entre em contato com o administrador.</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Profile section */}
         <Card className="border border-border hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">

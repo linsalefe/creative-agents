@@ -42,6 +42,9 @@ class UserResponse(BaseModel):
     email: str
     role: str
     avatar_url: str | None = None
+    credits: int = 1000
+    is_active: bool = True
+    created_at: str | None = None
 
 
 class TokenResponse(BaseModel):
@@ -70,7 +73,28 @@ class UpdateUserRoleRequest(BaseModel):
     role: str
 
 
+class UpdateCreditsRequest(BaseModel):
+    credits: int
+
+
+class ToggleActiveRequest(BaseModel):
+    is_active: bool
+
+
 # --- Helpers ---
+
+
+def _user_to_response(u: User) -> UserResponse:
+    return UserResponse(
+        id=u.id,
+        name=u.name,
+        email=u.email,
+        role=u.role,
+        avatar_url=u.avatar_url,
+        credits=u.credits,
+        is_active=u.is_active,
+        created_at=u.created_at.isoformat() if u.created_at else None,
+    )
 
 
 def create_token(user_id: int) -> str:
@@ -129,9 +153,7 @@ async def register(req: RegisterRequest, db: AsyncSession = Depends(get_db)):
 
     return TokenResponse(
         access_token=create_token(user.id),
-        user=UserResponse(
-            id=user.id, name=user.name, email=user.email, role=user.role
-        ),
+        user=_user_to_response(user),
     )
 
 
@@ -142,27 +164,21 @@ async def login(req: LoginRequest, db: AsyncSession = Depends(get_db)):
     if not user or not pwd_context.verify(req.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Credenciais invalidas")
 
+    if not user.is_active:
+        raise HTTPException(
+            status_code=403,
+            detail="Conta desativada. Entre em contato com o administrador.",
+        )
+
     return TokenResponse(
         access_token=create_token(user.id),
-        user=UserResponse(
-            id=user.id,
-            name=user.name,
-            email=user.email,
-            role=user.role,
-            avatar_url=user.avatar_url,
-        ),
+        user=_user_to_response(user),
     )
 
 
 @router.get("/me", response_model=UserResponse)
 async def me(user: User = Depends(get_current_user)):
-    return UserResponse(
-        id=user.id,
-        name=user.name,
-        email=user.email,
-        role=user.role,
-        avatar_url=user.avatar_url,
-    )
+    return _user_to_response(user)
 
 
 # --- Profile Endpoints ---
@@ -185,13 +201,7 @@ async def update_profile(
         user.email = req.email
     await db.commit()
     await db.refresh(user)
-    return UserResponse(
-        id=user.id,
-        name=user.name,
-        email=user.email,
-        role=user.role,
-        avatar_url=user.avatar_url,
-    )
+    return _user_to_response(user)
 
 
 @router.post("/change-password")
@@ -217,12 +227,7 @@ async def list_users(
 ):
     result = await db.execute(select(User).order_by(User.created_at.desc()))
     users = result.scalars().all()
-    return [
-        UserResponse(
-            id=u.id, name=u.name, email=u.email, role=u.role, avatar_url=u.avatar_url
-        )
-        for u in users
-    ]
+    return [_user_to_response(u) for u in users]
 
 
 @router.post("/users", response_model=UserResponse)
@@ -244,9 +249,7 @@ async def create_user(
     db.add(user)
     await db.commit()
     await db.refresh(user)
-    return UserResponse(
-        id=user.id, name=user.name, email=user.email, role=user.role
-    )
+    return _user_to_response(user)
 
 
 @router.patch("/users/{user_id}/role", response_model=UserResponse)
@@ -263,6 +266,80 @@ async def update_user_role(
     user.role = req.role
     await db.commit()
     await db.refresh(user)
-    return UserResponse(
-        id=user.id, name=user.name, email=user.email, role=user.role
+    return _user_to_response(user)
+
+
+@router.patch("/users/{user_id}/credits", response_model=UserResponse)
+async def update_user_credits(
+    user_id: int,
+    req: UpdateCreditsRequest,
+    admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario nao encontrado")
+    if req.credits < 0:
+        raise HTTPException(status_code=400, detail="Creditos nao podem ser negativos")
+    user.credits = req.credits
+    await db.commit()
+    await db.refresh(user)
+    return _user_to_response(user)
+
+
+@router.patch("/users/{user_id}/active", response_model=UserResponse)
+async def toggle_user_active(
+    user_id: int,
+    req: ToggleActiveRequest,
+    admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario nao encontrado")
+    user.is_active = req.is_active
+    await db.commit()
+    await db.refresh(user)
+    return _user_to_response(user)
+
+
+@router.delete("/users/{user_id}")
+async def delete_user(
+    user_id: int,
+    admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario nao encontrado")
+    if user.role == "admin":
+        raise HTTPException(status_code=403, detail="Nao e possivel deletar um admin")
+    await db.delete(user)
+    await db.commit()
+    return {"message": "Usuario deletado com sucesso"}
+
+
+@router.get("/admin/stats")
+async def admin_stats(
+    admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    from sqlalchemy import func as sqlfunc
+    from models.db_models import Arte, Variacao
+
+    total_users = await db.execute(select(sqlfunc.count(User.id)))
+    active_users = await db.execute(
+        select(sqlfunc.count(User.id)).where(User.is_active == True)
     )
+    total_artes = await db.execute(select(sqlfunc.count(Arte.id)))
+    total_variacoes = await db.execute(select(sqlfunc.count(Variacao.id)))
+
+    return {
+        "total_users": total_users.scalar(),
+        "active_users": active_users.scalar(),
+        "total_artes": total_artes.scalar(),
+        "total_variacoes": total_variacoes.scalar(),
+    }

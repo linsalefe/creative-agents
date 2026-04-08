@@ -31,7 +31,9 @@ import {
   Moon,
   Menu,
   X,
+  ShieldCheck,
 } from "lucide-react";
+import { CreditsBadge } from "@/components/credits-badge";
 
 /* ================================================================
    Sidebar Context
@@ -159,6 +161,13 @@ const menuGroups: MenuGroup[] = [
         icon: Users,
         color: "text-pink-400",
         bg: "bg-pink-500/10",
+      },
+      {
+        label: "Super Admin",
+        href: "/admin",
+        icon: ShieldCheck,
+        color: "text-violet-400",
+        bg: "bg-violet-500/10",
       },
     ],
   },
@@ -424,9 +433,7 @@ function SidebarContent({
                 <p className="text-sm font-medium text-white truncate">
                   {user.name}
                 </p>
-                <p className="text-[11px] text-muted-foreground truncate">
-                  {user.email}
-                </p>
+                <CreditsBadge showLabel className="mt-1" />
               </div>
             )}
 
