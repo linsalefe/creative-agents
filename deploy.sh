@@ -11,7 +11,7 @@ echo "========================================="
 # a) Instalar dependências do sistema
 echo "[1/9] Instalando dependencias do sistema..."
 apt update -qq
-apt install -y python3 python3-pip python3-venv nodejs npm nginx certbot python3-certbot-nginx git
+apt install -y python3 python3-pip python3-venv nodejs nginx certbot python3-certbot-nginx git
 
 # b) Clonar ou atualizar o repositório
 echo "[2/9] Clonando/atualizando repositorio..."
