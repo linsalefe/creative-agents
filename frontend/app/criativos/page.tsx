@@ -32,6 +32,10 @@ import {
 
 const API_URL = "http://localhost:8000";
 
+function resolveUrl(url: string) {
+  return url.startsWith("/static/") ? `${API_URL}${url}` : url;
+}
+
 interface CreativeOutput {
   id: string;
   estrategia: {
@@ -72,12 +76,10 @@ interface CopyVariation {
   headline: string;
   subheadline: string;
   cta: string;
-  prompt_ideogram: string;
 }
 
 interface VariationItem {
   copy: CopyVariation;
-  fundo_url: string | null;
   imagem_url: string | null;
 }
 
@@ -104,9 +106,9 @@ const AGENT_DURATIONS = [3000, 4000, 5000, 2000, 8000];
 
 const VARIATION_AGENT_IDS = ["vision", "variation", "generation"] as const;
 const VARIATION_AGENT_LABELS: Record<string, string> = {
-  vision: "Vision (GPT-4o)",
-  variation: "Copy + Prompts",
-  generation: "Ideogram + Bannerbear",
+  vision: "Analise (Nano Banana Pro)",
+  variation: "Copys (Nano Banana Pro)",
+  generation: "Edicao (Nano Banana Pro)",
 };
 
 export default function CriativosPage() {
@@ -701,26 +703,19 @@ export default function CriativosPage() {
 
             {/* Grid 2x3 de variacoes */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {varResult.variacoes.map((item, i) => {
-                const displayUrl = item.imagem_url || item.fundo_url;
-                return (
+              {varResult.variacoes.map((item, i) => (
                   <Card key={i} className="group overflow-hidden p-0">
                     {/* Image */}
-                    {displayUrl ? (
+                    {item.imagem_url ? (
                       <div className="relative aspect-square bg-white/5 overflow-hidden">
                         <img
-                          src={displayUrl}
+                          src={resolveUrl(item.imagem_url)}
                           alt={item.copy.headline}
                           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                        <div className="absolute top-2 left-2">
-                          <Badge variant="accent" className="bg-black/50 backdrop-blur-sm border-none">
-                            {item.imagem_url ? "Montado" : "Fundo"}
-                          </Badge>
-                        </div>
                         <button
-                          onClick={() => handleDownloadVar(displayUrl, i)}
+                          onClick={() => handleDownloadVar(resolveUrl(item.imagem_url!), i)}
                           className="absolute bottom-2 right-2 p-2 bg-black/50 backdrop-blur-sm rounded-lg border border-white/20 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-black/70"
                         >
                           <Download className="w-3.5 h-3.5" />
@@ -750,8 +745,7 @@ export default function CriativosPage() {
                       </div>
                     </CardContent>
                   </Card>
-                );
-              })}
+              ))}
             </div>
           </section>
         )}

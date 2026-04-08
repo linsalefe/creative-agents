@@ -1,10 +1,8 @@
-import base64
-
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, HTTPException, UploadFile, File
 
 from models.creative_request import CreativeRequest
 from models.creative_output import CreativeOutput
-from models.variation import VariationRequest, VariationOutput
+from models.variation import VariationOutput
 from agents.orchestrator import Orchestrator
 
 router = APIRouter(prefix="/criativos", tags=["criativos"])
@@ -63,22 +61,14 @@ async def gerar_variante(criativo_id: str, request: CreativeRequest):
 
 
 @router.post("/variacoes", response_model=VariationOutput)
-async def gerar_variacoes(
-    file: UploadFile = File(...),
-    template_uid: str = Form(default=""),
-):
-    """Recebe upload de imagem, analisa e gera 5 variações completas."""
+async def gerar_variacoes(file: UploadFile = File(...)):
+    """Recebe upload de imagem, analisa e gera 5 variações com edição de texto."""
     try:
-        contents = await file.read()
+        image_data = await file.read()
         mime_type = file.content_type or "image/png"
-        b64 = base64.b64encode(contents).decode("utf-8")
-        data_uri = f"data:{mime_type};base64,{b64}"
-
-        request = VariationRequest(
-            imagem_url=data_uri,
-            template_uid=template_uid or None,
+        resultado = await orchestrator.gerar_variacoes(
+            image_data=image_data, mime_type=mime_type
         )
-        resultado = await orchestrator.gerar_variacoes(request)
         return resultado
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

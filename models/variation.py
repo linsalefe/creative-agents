@@ -1,11 +1,6 @@
 from pydantic import BaseModel
 
 
-class VariationRequest(BaseModel):
-    imagem_url: str
-    template_uid: str | None = None
-
-
 class VisionAnalysis(BaseModel):
     headline: str
     subheadline: str
@@ -22,7 +17,7 @@ class CopyVariation(BaseModel):
     headline: str
     subheadline: str
     cta: str
-    prompt_ideogram: str
+    prompt_ideogram: str = ""
 
 
 class VariationItem(BaseModel):

@@ -1,5 +1,8 @@
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from routers.criativos import router as criativos_router
 
 app = FastAPI(
@@ -17,6 +20,11 @@ app.add_middleware(
 )
 
 app.include_router(criativos_router)
+
+# Servir imagens geradas como arquivos estáticos
+images_dir = os.path.join(os.path.dirname(__file__), "generated_images")
+os.makedirs(images_dir, exist_ok=True)
+app.mount("/static/images", StaticFiles(directory=images_dir), name="images")
 
 
 @app.get("/")

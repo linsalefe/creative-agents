@@ -1,5 +1,5 @@
 from models.variation import VisionAnalysis
-from services.claude_service import ClaudeService
+from services.gemini_service import GeminiService
 
 SYSTEM_PROMPT = """Você é um analista de marketing visual especializado em criativos digitais.
 
@@ -33,12 +33,13 @@ Responda APENAS com um JSON válido:
 
 class VisionAgent:
     def __init__(self):
-        self.claude = ClaudeService()
+        self.gemini = GeminiService()
 
-    async def run(self, image_url: str) -> VisionAnalysis:
-        data = await self.claude.generate_with_image(
+    async def run(self, image_data: bytes, mime_type: str) -> VisionAnalysis:
+        data = await self.gemini.generate_with_image(
             system_prompt=SYSTEM_PROMPT,
             text="Analise este criativo de marketing e extraia todas as informações solicitadas.",
-            image_url=image_url,
+            image_data=image_data,
+            mime_type=mime_type,
         )
         return VisionAnalysis(**data)

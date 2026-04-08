@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 from models.creative_request import CreativeRequest
 from models.creative_output import CreativeOutput
-from models.variation import VariationRequest, VariationOutput, VariationItem, CopyVariation
+from models.variation import VariationOutput, VariationItem, CopyVariation
 from agents.strategy_agent import StrategyAgent
 from agents.copy_agent import CopyAgent
 from agents.creative_director_agent import CreativeDirectorAgent
@@ -14,9 +14,7 @@ from agents.format_agent import FormatAgent
 from agents.image_agent import ImageAgent
 from agents.vision_agent import VisionAgent
 from agents.variation_agent import VariationAgent
-from services.bannerbear_service import BannerbearService
-from services.ideogram_service import IdeogramService
-from services.imagen_service import ImagenService
+from agents.image_edit_agent import ImageEditAgent
 
 load_dotenv()
 
@@ -30,10 +28,7 @@ class Orchestrator:
         self.image_agent = ImageAgent()
         self.vision_agent = VisionAgent()
         self.variation_agent = VariationAgent()
-        self.image_provider = os.getenv("IMAGE_PROVIDER", "ideogram").lower()
-        self.ideogram = IdeogramService()
-        self.imagen = ImagenService()
-        self.bannerbear = BannerbearService()
+        self.image_edit_agent = ImageEditAgent()
 
     async def gerar_criativo(self, request: CreativeRequest) -> CreativeOutput:
         """Pipeline completo: Strategy → Copy → Creative Director → Format → Image"""
@@ -131,61 +126,47 @@ class Orchestrator:
             imagem=imagem,
         )
 
-    async def gerar_variacoes(self, request: VariationRequest) -> VariationOutput:
-        """Pipeline de variações: Vision → Variation → (Ideogram + Bannerbear) x5 em paralelo"""
+    async def gerar_variacoes(self, image_data: bytes, mime_type: str) -> VariationOutput:
+        """Pipeline de variações: Vision → Variation → 5x Image Edit em paralelo"""
 
-        # 1. Analisa o criativo original com GPT-4o Vision
-        analise = await self.vision_agent.run(image_url=request.imagem_url)
+        # 1. Analisa o criativo original com Gemini Vision
+        analise = await self.vision_agent.run(image_data=image_data, mime_type=mime_type)
 
-        # 2. Gera 5 variações de copy + prompt de fundo
+        # 2. Gera 5 variações de copy
         variacoes_copy = await self.variation_agent.run(analise=analise)
 
-        # 3. Para cada variação em paralelo: Ideogram gera fundo → Bannerbear monta
-        template_uid = request.template_uid or os.getenv("BANNERBEAR_TEMPLATE_FEED", "")
+        # 3. Edita imagem em paralelo com semáforo para rate limit
+        semaphore = asyncio.Semaphore(2)
+        images_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "generated_images")
+        os.makedirs(images_dir, exist_ok=True)
 
         async def processar_variacao(copy_var: CopyVariation) -> VariationItem:
-            fundo_url = None
-            imagem_final_url = None
-
-            try:
-                if self.image_provider == "imagen":
-                    fundo_url = await self.imagen.generate_image(
-                        prompt=copy_var.prompt_ideogram,
-                        aspect_ratio="1:1",
-                    )
-                else:
-                    fundo_url = await self.ideogram.generate_image(
-                        prompt=copy_var.prompt_ideogram,
-                        aspect_ratio="ASPECT_1_1",
-                    )
-            except Exception as e:
-                print(f"Geração de imagem falhou para variação ({self.image_provider}): {e}")
-                return VariationItem(copy=copy_var, fundo_url=None, imagem_url=None)
-
-            if self.bannerbear.disponivel and template_uid and fundo_url:
+            async with semaphore:
                 try:
-                    imagem_final_url = await self.bannerbear.create_image(
-                        template_uid=template_uid,
-                        headline=copy_var.headline,
-                        subheadline=copy_var.subheadline,
-                        cta=copy_var.cta,
-                        image_url=fundo_url,
+                    edited_bytes = await self.image_edit_agent.run(
+                        original_image=image_data,
+                        mime_type=mime_type,
+                        original_analysis=analise,
+                        new_copy=copy_var,
+                    )
+                    filename = f"{uuid.uuid4()}.png"
+                    filepath = os.path.join(images_dir, filename)
+                    with open(filepath, "wb") as f:
+                        f.write(edited_bytes)
+                    return VariationItem(
+                        copy=copy_var,
+                        imagem_url=f"/static/images/{filename}",
                     )
                 except Exception as e:
-                    print(f"Bannerbear falhou para variação: {e}")
-
-            return VariationItem(
-                copy=copy_var,
-                fundo_url=fundo_url,
-                imagem_url=imagem_final_url,
-            )
+                    print(f"Edição de imagem falhou para variação: {e}")
+                    return VariationItem(copy=copy_var, imagem_url=None)
 
         variacoes = await asyncio.gather(
             *[processar_variacao(cv) for cv in variacoes_copy]
         )
 
         return VariationOutput(
-            original_url=request.imagem_url,
+            original_url="upload",
             analise=analise,
             variacoes=list(variacoes),
         )
