@@ -32,6 +32,7 @@ import {
   Menu,
   X,
   ShieldCheck,
+  Video,
 } from "lucide-react";
 import { CreditsBadge } from "@/components/credits-badge";
 
@@ -120,6 +121,13 @@ const menuGroups: MenuGroup[] = [
         icon: Layers,
         color: "text-amber-400",
         bg: "bg-amber-500/10",
+      },
+      {
+        label: "Vídeos",
+        href: "/videos",
+        icon: Video,
+        color: "text-rose-400",
+        bg: "bg-rose-500/10",
       },
     ],
   },
