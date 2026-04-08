@@ -39,61 +39,62 @@ class VideoPipelineAgent:
         imagem_url = request.imagem_url
         slide_urls: list[str] = []
 
-        if request.tipo in ("ken_burns", "slideshow") and not imagem_url:
-            from models.creative_output import CreativeDirectorOutput, FormatOutput
+        if request.tipo in ("ken_burns", "slideshow"):
+            if imagem_url:
+                # User provided image — reuse for all slides
+                if request.tipo == "slideshow":
+                    slide_urls = [imagem_url, imagem_url, imagem_url]
+            else:
+                from models.creative_output import CreativeDirectorOutput, FormatOutput
 
-            direcao = CreativeDirectorOutput(
-                conceito="Video marketing background",
-                cores_dominantes=["#333333", "#FFFFFF"],
-                estilo_visual="cinematográfico, profissional",
-                elementos_visuais="produto em destaque, atmosfera premium",
-                prompt_ideogram=(
-                    f"Professional cinematic background for {request.produto}, "
-                    "high quality, no text, no letters, photorealistic, 4k"
-                ),
-            )
-            formato = FormatOutput(
-                formato=request.plataforma,
-                dimensoes="1080x1920" if request.plataforma != "feed" else "1080x1080",
-                template_bannerbear="",
-                variantes=[],
-                especificacoes={},
-            )
-            imagem_result = await self.image_agent.run(
-                copy=copy, direcao=direcao, formato=formato
-            )
-            imagem_url = imagem_result.imagem_url
+                direcao = CreativeDirectorOutput(
+                    conceito="Video marketing background",
+                    cores_dominantes=["#333333", "#FFFFFF"],
+                    estilo_visual="cinematográfico, profissional",
+                    elementos_visuais="produto em destaque, atmosfera premium",
+                    prompt_ideogram=(
+                        f"Professional cinematic background for {request.produto}, "
+                        "high quality, no text, no letters, photorealistic, 4k"
+                    ),
+                )
+                formato = FormatOutput(
+                    formato=request.plataforma,
+                    dimensoes="1080x1920" if request.plataforma != "feed" else "1080x1080",
+                    template_bannerbear="",
+                    variantes=[],
+                    especificacoes={},
+                )
+                imagem_result = await self.image_agent.run(
+                    copy=copy, direcao=direcao, formato=formato
+                )
+                imagem_url = imagem_result.imagem_url
 
-            # For slideshow, generate additional images
-            if request.tipo == "slideshow":
-                slide_urls.append(imagem_url)
-                for i in range(2):
-                    direcao_var = CreativeDirectorOutput(
-                        conceito=f"Video slide {i + 2}",
-                        cores_dominantes=["#333333", "#FFFFFF"],
-                        estilo_visual="cinematográfico, profissional",
-                        elementos_visuais="produto em destaque",
-                        prompt_ideogram=(
-                            f"Professional cinematic image for {request.produto}, "
-                            f"variation {i + 2}, high quality, no text, photorealistic, 4k"
-                        ),
-                    )
-                    img = await self.image_agent.run(
-                        copy=copy, direcao=direcao_var, formato=formato
-                    )
-                    slide_urls.append(img.imagem_url)
+                # For slideshow, generate additional images
+                if request.tipo == "slideshow":
+                    slide_urls.append(imagem_url)
+                    for i in range(2):
+                        direcao_var = CreativeDirectorOutput(
+                            conceito=f"Video slide {i + 2}",
+                            cores_dominantes=["#333333", "#FFFFFF"],
+                            estilo_visual="cinematográfico, profissional",
+                            elementos_visuais="produto em destaque",
+                            prompt_ideogram=(
+                                f"Professional cinematic image for {request.produto}, "
+                                f"variation {i + 2}, high quality, no text, photorealistic, 4k"
+                            ),
+                        )
+                        img = await self.image_agent.run(
+                            copy=copy, direcao=direcao_var, formato=formato
+                        )
+                        slide_urls.append(img.imagem_url)
 
         # 4. Video Script Agent
         script = await self.video_script_agent.run(request, copy)
 
-        # Inject image URLs into script if applicable
-        if request.tipo == "ken_burns" and imagem_url:
-            pass  # imagem_url passed via props separately
-
+        # Inject real image URLs into script, replacing any placeholders
         if request.tipo == "slideshow" and slide_urls:
             for i, slide in enumerate(script.slides):
-                if i < len(slide_urls):
-                    slide.imagem_url = slide_urls[i]
+                slide.imagem_url = slide_urls[i % len(slide_urls)]
 
         # 5. Composition mapping
         composition_map = {
