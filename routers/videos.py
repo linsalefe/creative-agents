@@ -1,11 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, UploadFile, File, Form
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime
-from typing import Literal
+from typing import Literal, Optional
+import uuid
+import os
 
-from models.map_video_output import MapVideoRequest, MapVideoOutput
+from models.video_output import VideoRequest, VideoOutput
 from models.db_models import User
-from agents.map_video_agent import MapVideoAgent
+from agents.video_pipeline_agent import VideoPipelineAgent
 from routers.auth import get_current_user
 from services.database import get_db
 from pydantic import BaseModel
@@ -20,14 +22,14 @@ CREDIT_COST = 20
 class VideoJobStatus(BaseModel):
     job_id: str
     status: Literal["processing", "completed", "failed"]
-    resultado: MapVideoOutput | None = None
+    resultado: VideoOutput | None = None
     erro: str | None = None
     created_at: str
     completed_at: str | None = None
     user_id: int
 
 video_jobs: dict[str, VideoJobStatus] = {}
-video_historico: dict[str, MapVideoOutput] = {}
+video_historico: dict[str, VideoOutput] = {}
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -46,15 +48,15 @@ async def _check_and_deduct_credits(user: User, db: AsyncSession) -> None:
     db_user.credits -= CREDIT_COST
     await db.commit()
 
-map_video_agent = MapVideoAgent()
+pipeline = VideoPipelineAgent()
 
 # ---------------------------------------------------------------------------
 # Background task
 # ---------------------------------------------------------------------------
-async def _processar_video_job(job_id: str, request: MapVideoRequest):
+async def _processar_video_job(job_id: str, request: VideoRequest):
     """Roda em background — atualiza o job store quando terminar."""
     try:
-        resultado = await map_video_agent.gerar_video(request)
+        resultado = await pipeline.gerar_video(request)
         video_jobs[job_id].status = "completed"
         video_jobs[job_id].resultado = resultado
         video_jobs[job_id].completed_at = datetime.utcnow().isoformat()
@@ -70,15 +72,43 @@ async def _processar_video_job(job_id: str, request: MapVideoRequest):
 # ---------------------------------------------------------------------------
 @router.post("/gerar")
 async def gerar_video(
-    request: MapVideoRequest,
     background_tasks: BackgroundTasks,
+    produto: str = Form(...),
+    publico: str = Form(...),
+    contexto: str = Form(...),
+    tipo: Literal["ken_burns", "slideshow", "motion_graphics"] = Form(default="ken_burns"),
+    plataforma: Literal["feed", "stories", "reels"] = Form(default="stories"),
+    duracao_segundos: int = Form(default=10),
+    file: Optional[UploadFile] = File(default=None),
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Inicia geração de vídeo cartográfico em background. Retorna job_id para polling."""
+    """Inicia geração de vídeo criativo em background. Retorna job_id para polling."""
     await _check_and_deduct_credits(user, db)
 
-    import uuid
+    # Se enviou imagem, salvar no disco e montar URL
+    imagem_url: Optional[str] = None
+    if file and file.filename:
+        images_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "generated_images")
+        os.makedirs(images_dir, exist_ok=True)
+        ext = os.path.splitext(file.filename)[1] or ".png"
+        filename = f"video_upload_{uuid.uuid4().hex}{ext}"
+        filepath = os.path.join(images_dir, filename)
+        content = await file.read()
+        with open(filepath, "wb") as f:
+            f.write(content)
+        imagem_url = f"file://{filepath}"
+
+    request = VideoRequest(
+        produto=produto,
+        publico=publico,
+        contexto=contexto,
+        tipo=tipo,
+        plataforma=plataforma,
+        duracao_segundos=duracao_segundos,
+        imagem_url=imagem_url,
+    )
+
     job_id = str(uuid.uuid4())
 
     video_jobs[job_id] = VideoJobStatus(
@@ -110,7 +140,7 @@ async def listar_historico(user: User = Depends(get_current_user)):
     return list(video_historico.values())
 
 
-@router.get("/{video_id}", response_model=MapVideoOutput)
+@router.get("/{video_id}", response_model=VideoOutput)
 async def buscar_video(
     video_id: str,
     user: User = Depends(get_current_user),
