@@ -59,6 +59,14 @@ interface VariationOutput {
   formato: "feed" | "story" | "ambos";
 }
 
+interface JobResponse {
+  job_id: string;
+  status: "processing" | "completed" | "failed";
+  resultado?: VariationOutput;
+  erro?: string;
+  formato: string;
+}
+
 type StepStatus = "pending" | "active" | "completed";
 
 interface PipelineStep {
@@ -138,6 +146,11 @@ export default function VariacoesPage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<VariationOutput | null>(null);
 
+  // Job state
+  const [jobId, setJobId] = useState<string | null>(null);
+  const [jobStatus, setJobStatus] = useState<"idle" | "processing" | "completed" | "failed">("idle");
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   // Copied legendas tracker
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
@@ -154,6 +167,65 @@ export default function VariacoesPage() {
       router.replace("/login");
     }
   }, [user, authLoading, router]);
+
+  // Restaurar job do localStorage ao montar
+  useEffect(() => {
+    const savedJobId = localStorage.getItem("variacoes_job_id");
+    if (savedJobId && !result) {
+      setJobId(savedJobId);
+      setJobStatus("processing");
+      setLoading(true);
+      setSteps(initialSteps.map((s, i) => i === 2 ? { ...s, status: "active" } : { ...s, status: "completed" }));
+      toast.info("Retomando geração anterior...");
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Polling effect — roda quando jobId muda
+  useEffect(() => {
+    if (!jobId || jobStatus !== "processing") return;
+
+    if (pollingRef.current) clearInterval(pollingRef.current);
+
+    pollingRef.current = setInterval(async () => {
+      try {
+        const { data } = await api.get<JobResponse>(`/criativos/jobs/${jobId}`);
+
+        if (data.status === "completed" && data.resultado) {
+          clearInterval(pollingRef.current!);
+          pollingRef.current = null;
+          setSteps((prev) => prev.map((s) => ({ ...s, status: "completed" as StepStatus })));
+          setResult(data.resultado);
+          setJobStatus("completed");
+          setLoading(false);
+          localStorage.removeItem("variacoes_job_id");
+          toast.success("Variações geradas com sucesso!");
+        } else if (data.status === "failed") {
+          clearInterval(pollingRef.current!);
+          pollingRef.current = null;
+          setJobStatus("failed");
+          setLoading(false);
+          localStorage.removeItem("variacoes_job_id");
+          toast.error(data.erro || "Erro ao gerar variações");
+          setSteps((prev) =>
+            prev.map((s) => s.status === "active" ? { ...s, status: "pending" as StepStatus } : s)
+          );
+        }
+      } catch {
+        // Erro de rede — continua tentando
+      }
+    }, 3000);
+
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    };
+  }, [jobId, jobStatus]);
+
+  // Cleanup ao desmontar
+  useEffect(() => {
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    };
+  }, []);
 
   // ---------- File handling ----------
   const handleFileSelect = useCallback((f: File) => {
@@ -224,6 +296,7 @@ export default function VariacoesPage() {
     setLoading(true);
     setResult(null);
     setSteps(initialSteps);
+    setJobStatus("processing");
 
     const timeouts = simulateProgress();
 
@@ -232,25 +305,28 @@ export default function VariacoesPage() {
       formData.append("file", file);
       formData.append("formato", formato);
 
-      const { data } = await api.post<VariationOutput>(
+      const { data } = await api.post<{ job_id: string; status: string }>(
         "/criativos/variacoes",
         formData,
         { headers: { "Content-Type": "multipart/form-data" } }
       );
 
-      setSteps((prev) => prev.map((s) => ({ ...s, status: "completed" as StepStatus })));
-      setResult(data);
+      // Salvar job_id no localStorage para persistir navegação
+      setJobId(data.job_id);
+      localStorage.setItem("variacoes_job_id", data.job_id);
+      toast.info("Geração iniciada! Você pode navegar — a IA continua trabalhando.");
+
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Erro ao gerar variações";
+      const message = err instanceof Error ? err.message : "Erro ao iniciar geração";
       toast.error(message);
+      setJobStatus("failed");
+      setLoading(false);
       setSteps((prev) =>
-        prev.map((s) =>
-          s.status === "active" ? { ...s, status: "pending" as StepStatus } : s
-        )
+        prev.map((s) => s.status === "active" ? { ...s, status: "pending" as StepStatus } : s)
       );
     } finally {
       timeouts.forEach(clearTimeout);
-      setLoading(false);
+      // NÃO setar loading=false aqui — o polling vai setar quando terminar
     }
   }
 
@@ -520,6 +596,17 @@ export default function VariacoesPage() {
               </div>
             </CardContent>
           </Card>
+        )}
+
+        {/* Persistence banner */}
+        {loading && (
+          <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-blue-500/20 bg-blue-500/5 text-sm text-blue-400">
+            <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse shrink-0" />
+            <span>
+              Geração em andamento — você pode navegar pelo app sem perder o progresso.
+              {jobId && <span className="opacity-60 ml-1 font-mono text-xs">#{jobId.slice(0, 8)}</span>}
+            </span>
+          </div>
         )}
 
         {/* Results */}
