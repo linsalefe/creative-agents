@@ -20,6 +20,11 @@ import { useAuth } from "@/contexts/auth-context";
 import api from "@/lib/api";
 import { toast } from "sonner";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
+const resolveUrl = (url: string) =>
+  url.startsWith("/static/") ? `${API_URL}${url}` : url;
+
 interface VideoOutput {
   id: string;
   video_url: string;
@@ -182,12 +187,6 @@ export default function VideosPage() {
     setCopied(true);
     toast.success("Legenda copiada!");
     setTimeout(() => setCopied(false), 2000);
-  };
-
-  const getApiBaseUrl = () => {
-    const baseUrl =
-      process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001/api";
-    return baseUrl.replace(/\/api$/, "");
   };
 
   if (authLoading || !user) return null;
@@ -398,10 +397,10 @@ export default function VideosPage() {
                 <video
                   controls
                   className="w-full rounded-lg bg-black"
-                  src={`${getApiBaseUrl()}${currentVideo.video_url}`}
+                  src={resolveUrl(currentVideo.video_url)}
                   poster={
                     currentVideo.thumbnail_url
-                      ? `${getApiBaseUrl()}${currentVideo.thumbnail_url}`
+                      ? resolveUrl(currentVideo.thumbnail_url)
                       : undefined
                   }
                 />
@@ -443,7 +442,7 @@ export default function VideosPage() {
 
                 <div className="flex gap-2">
                   <a
-                    href={`${getApiBaseUrl()}${currentVideo.video_url}`}
+                    href={resolveUrl(currentVideo.video_url)}
                     download
                     className="flex-1 py-2.5 rounded-lg border border-border text-foreground font-medium text-sm
                                hover:bg-muted/50 transition-colors flex items-center justify-center gap-2"
@@ -501,7 +500,7 @@ export default function VideosPage() {
                     >
                       {v.thumbnail_url ? (
                         <img
-                          src={`${getApiBaseUrl()}${v.thumbnail_url}`}
+                          src={resolveUrl(v.thumbnail_url)}
                           alt={`Video ${v.id.slice(0, 8)}`}
                           className="w-full aspect-video object-cover"
                         />
