@@ -51,11 +51,11 @@ export default function ConfiguracoesPage() {
     e.preventDefault();
 
     if (!name.trim()) {
-      toast.error("O nome e obrigatorio");
+      toast.error("O nome é obrigatório");
       return;
     }
     if (!email.trim()) {
-      toast.error("O email e obrigatorio");
+      toast.error("O email é obrigatório");
       return;
     }
 
@@ -92,7 +92,7 @@ export default function ConfiguracoesPage() {
       return;
     }
     if (newPassword !== confirmPassword) {
-      toast.error("As senhas nao coincidem");
+      toast.error("As senhas não coincidem");
       return;
     }
 
@@ -125,31 +125,31 @@ export default function ConfiguracoesPage() {
 
   return (
     <AppShell>
-      <div className="max-w-2xl mx-auto space-y-6">
+      <div className="max-w-2xl mx-auto space-y-6 px-6 py-8 animate-fade-in">
         {/* Page title */}
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-            <Settings className="w-5 h-5 text-primary" />
+          <div className="w-10 h-10 rounded-lg bg-gray-500/10 flex items-center justify-center">
+            <Settings className="w-5 h-5 text-gray-400" />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-foreground">
-              Configuracoes
+              Configurações
             </h1>
             <p className="text-sm text-muted-foreground">
-              Gerencie seu perfil e preferencias
+              Gerencie seu perfil e preferências
             </p>
           </div>
         </div>
 
         {/* Profile section */}
-        <Card>
+        <Card className="border border-border hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
-              <User className="w-4 h-4 text-primary" />
+              <User className="w-4 h-4 text-violet-400" />
               Perfil
             </CardTitle>
             <CardDescription>
-              Atualize suas informacoes pessoais
+              Atualize suas informações pessoais
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -176,8 +176,8 @@ export default function ConfiguracoesPage() {
                 />
               </div>
               <div className="pt-2">
-                <Button type="submit" loading={savingProfile}>
-                  Salvar Alteracoes
+                <Button type="submit" loading={savingProfile} className="active:scale-[0.98] transition-transform shadow-lg shadow-violet-600/20">
+                  Salvar Alterações
                 </Button>
               </div>
             </form>
@@ -185,10 +185,10 @@ export default function ConfiguracoesPage() {
         </Card>
 
         {/* Change password section */}
-        <Card>
+        <Card className="border border-border hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
-              <Lock className="w-4 h-4 text-primary" />
+              <Lock className="w-4 h-4 text-violet-400" />
               Alterar Senha
             </CardTitle>
             <CardDescription>
@@ -234,7 +234,7 @@ export default function ConfiguracoesPage() {
                 />
               </div>
               <div className="pt-2">
-                <Button type="submit" loading={savingPassword}>
+                <Button type="submit" loading={savingPassword} className="active:scale-[0.98] transition-transform shadow-lg shadow-violet-600/20">
                   Alterar Senha
                 </Button>
               </div>

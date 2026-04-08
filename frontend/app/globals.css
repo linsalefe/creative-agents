@@ -4,11 +4,10 @@
 
 /* ================================================================
    CREATIVE MACHINE — Design System
-   Dark-first SaaS theme with purple primary (#8B5CF6)
+   Dark-first SaaS theme with violet primary (#8B5CF6)
    ================================================================ */
 
 @theme inline {
-  /* Color mappings → Tailwind utilities */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -28,7 +27,14 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -36,101 +42,64 @@
   --color-sidebar-accent: var(--sidebar-accent);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
-
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-
-  /* Radius */
+  --color-sidebar-ring: var(--sidebar-ring);
   --radius-sm: calc(var(--radius) * 0.75);
   --radius-md: var(--radius);
   --radius-lg: calc(var(--radius) * 1.5);
   --radius-xl: calc(var(--radius) * 2);
-
-  /* Fonts */
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-mono: var(--font-jetbrains), ui-monospace, "JetBrains Mono", monospace;
 }
 
 /* ================================================================
-   LIGHT THEME (base :root)
-   ================================================================ */
-:root {
-  --background: #f8f9fb;
-  --foreground: #0f172a;
-  --card: #ffffff;
-  --card-foreground: #0f172a;
-  --popover: #ffffff;
-  --popover-foreground: #0f172a;
-  --primary: #7C3AED;
-  --primary-foreground: #ffffff;
-  --secondary: #f1f5f9;
-  --secondary-foreground: #0f172a;
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
-  --accent: #D97706;
-  --accent-foreground: #ffffff;
-  --destructive: #ef4444;
-  --destructive-foreground: #ffffff;
-  --border: #e2e8f0;
-  --input: #e2e8f0;
-  --ring: #7C3AED;
-  --radius: 0.5rem;
-
-  --sidebar: #ffffff;
-  --sidebar-foreground: #0f172a;
-  --sidebar-primary: #7C3AED;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f5f3ff;
-  --sidebar-accent-foreground: #0f172a;
-  --sidebar-border: #e2e8f0;
-
-  --chart-1: #8B5CF6;
-  --chart-2: #10b981;
-  --chart-3: #f59e0b;
-  --chart-4: #ef4444;
-  --chart-5: #3b82f6;
-}
-
-/* ================================================================
    DARK THEME (default)
    ================================================================ */
-.dark {
-  --background: #0a0f1a;
-  --foreground: #f8fafc;
-  --card: #0f1629;
-  --card-foreground: #f8fafc;
-  --popover: #0f1629;
-  --popover-foreground: #f8fafc;
+:root {
+  --background: #060912;
+  --foreground: #f1f0fb;
+  --card: rgba(139, 92, 246, 0.04);
+  --card-foreground: #f1f0fb;
+  --popover: #0c0f1a;
+  --popover-foreground: #f1f0fb;
   --primary: #8B5CF6;
   --primary-foreground: #ffffff;
-  --secondary: #1e293b;
-  --secondary-foreground: #f8fafc;
-  --muted: #1e293b;
-  --muted-foreground: #94a3b8;
+  --secondary: #1a1a2e;
+  --secondary-foreground: #f1f0fb;
+  --muted: #1a1a2e;
+  --muted-foreground: #8E8EA0;
   --accent: #F59E0B;
-  --accent-foreground: #0f172a;
-  --destructive: #ef4444;
+  --accent-foreground: #ffffff;
+  --destructive: #EF4444;
   --destructive-foreground: #ffffff;
-  --border: rgba(255, 255, 255, 0.06);
+  --success: #10B981;
+  --warning: #F59E0B;
+  --info: #3B82F6;
+  --border: rgba(139, 92, 246, 0.08);
   --input: rgba(255, 255, 255, 0.06);
   --ring: #8B5CF6;
-
-  --sidebar: #060b16;
-  --sidebar-foreground: #f8fafc;
+  --radius: 0.5rem;
+  --chart-1: #8B5CF6;
+  --chart-2: #10B981;
+  --chart-3: #F59E0B;
+  --chart-4: #3B82F6;
+  --chart-5: #EC4899;
+  --sidebar: #0C0F1A;
+  --sidebar-foreground: #f1f0fb;
   --sidebar-primary: #8B5CF6;
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: rgba(139, 92, 246, 0.1);
-  --sidebar-accent-foreground: #f8fafc;
+  --sidebar-accent-foreground: #A78BFA;
   --sidebar-border: rgba(255, 255, 255, 0.06);
-
-  --chart-1: #8B5CF6;
-  --chart-2: #10b981;
-  --chart-3: #f59e0b;
-  --chart-4: #ef4444;
-  --chart-5: #3b82f6;
+  --sidebar-ring: #8B5CF6;
+  --font-size-display: 2.25rem;
+  --font-size-h1: 1.75rem;
+  --font-size-h2: 1.375rem;
+  --font-size-body: 0.875rem;
+  --font-size-caption: 0.75rem;
+  --shadow-xs: 0 1px 2px rgba(0,0,0,0.2);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 6px rgba(0,0,0,0.3);
+  --shadow-lg: 0 10px 15px rgba(0,0,0,0.3);
 }
 
 /* ================================================================
@@ -183,38 +152,68 @@
 }
 
 /* ================================================================
-   LOGIN PAGE ANIMATIONS
+   LOGIN PAGE — Glassmorphism Card
    ================================================================ */
-@property --border-angle {
-  syntax: "<angle>";
-  initial-value: 0deg;
-  inherits: false;
-}
-
 .login-card-glow {
-  background: conic-gradient(
-    from var(--border-angle),
-    transparent 60%,
-    rgba(139, 92, 246, 0.4) 80%,
-    transparent 100%
-  );
-  animation: border-rotate 4s linear infinite;
-}
-
-@keyframes border-rotate {
-  from { --border-angle: 0deg; }
-  to { --border-angle: 360deg; }
+  position: relative;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(139, 92, 246, 0.15);
+  border-radius: 1rem;
+  backdrop-filter: blur(20px);
 }
 
 .input-glow:focus-within {
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1),
-              0 0 20px rgba(139, 92, 246, 0.08);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+  border-color: #8B5CF6;
 }
 
+/* ================================================================
+   BLOB DRIFT ANIMATIONS
+   ================================================================ */
 @keyframes blob-drift {
   0%, 100% { transform: translate(0, 0) scale(1); }
-  33% { transform: translate(30px, -20px) scale(1.05); }
-  66% { transform: translate(-20px, 15px) scale(0.95); }
+  25% { transform: translate(30px, -20px) scale(1.05); }
+  50% { transform: translate(-10px, 20px) scale(0.95); }
+  75% { transform: translate(-30px, -10px) scale(1.02); }
+}
+.blob-drift { animation: blob-drift 20s ease-in-out infinite; }
+.blob-drift-reverse { animation: blob-drift 25s ease-in-out infinite reverse; }
+
+/* ================================================================
+   SIDEBAR STYLES
+   ================================================================ */
+.sidebar-item-active {
+  position: relative;
+  background: linear-gradient(135deg, rgba(139,92,246,0.12), rgba(139,92,246,0.04));
+}
+.sidebar-item-active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 25%;
+  height: 50%;
+  width: 2px;
+  background: #8B5CF6;
+  border-radius: 0 2px 2px 0;
+}
+
+.sidebar-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  transition: background 150ms ease;
+}
+
+.sidebar-accent-enter {
+  animation: accent-enter 0.2s ease-out;
+}
+
+@keyframes accent-enter {
+  from { transform: scaleY(0); opacity: 0; }
+  to { transform: scaleY(1); opacity: 1; }
 }
 
 /* ================================================================
@@ -250,11 +249,21 @@
   to { transform: rotate(360deg); }
 }
 
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
 .animate-fade-in { animation: fade-in 0.4s ease-out; }
 .animate-slide-up { animation: slide-up 0.5s ease-out; }
 .animate-slide-down { animation: slide-down 0.5s ease-out; }
 .animate-pulse-slow { animation: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
 .agent-active { animation: progress-pulse 1.5s ease-in-out infinite; }
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent 25%, rgba(139,92,246,0.06) 50%, transparent 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
 
 /* Staggered entrance */
 .stagger-1 { animation-delay: 0.05s; }
@@ -262,18 +271,6 @@
 .stagger-3 { animation-delay: 0.15s; }
 .stagger-4 { animation-delay: 0.2s; }
 .stagger-5 { animation-delay: 0.25s; }
-
-/* ================================================================
-   SIDEBAR
-   ================================================================ */
-.sidebar-accent-enter {
-  animation: accent-enter 0.2s ease-out;
-}
-
-@keyframes accent-enter {
-  from { transform: scaleY(0); opacity: 0; }
-  to { transform: scaleY(1); opacity: 1; }
-}
 
 /* ================================================================
    GLOW EFFECTS

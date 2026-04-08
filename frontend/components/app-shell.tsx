@@ -32,7 +32,6 @@ import {
   Menu,
   X,
 } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 /* ================================================================
    Sidebar Context
@@ -83,7 +82,8 @@ interface MenuItem {
   label: string;
   href: string;
   icon: React.ElementType;
-  iconColor: string;
+  color: string;
+  bg: string;
   matchExact?: boolean;
   matchQuery?: Record<string, string>;
 }
@@ -102,19 +102,22 @@ const menuGroups: MenuGroup[] = [
         label: "Dashboard",
         href: "/dashboard",
         icon: LayoutDashboard,
-        iconColor: "text-blue-500",
+        color: "text-blue-400",
+        bg: "bg-blue-500/10",
       },
       {
         label: "Chat IA",
         href: "/chat",
         icon: MessageCircle,
-        iconColor: "text-violet-500",
+        color: "text-violet-400",
+        bg: "bg-violet-500/10",
       },
       {
-        label: "Variacoes",
+        label: "Variações",
         href: "/variacoes",
         icon: Layers,
-        iconColor: "text-amber-500",
+        color: "text-amber-400",
+        bg: "bg-amber-500/10",
       },
     ],
   },
@@ -125,14 +128,16 @@ const menuGroups: MenuGroup[] = [
         label: "Artes",
         href: "/biblioteca",
         icon: ImageIcon,
-        iconColor: "text-emerald-500",
+        color: "text-emerald-400",
+        bg: "bg-emerald-500/10",
         matchExact: true,
       },
       {
         label: "Favoritos",
         href: "/biblioteca?favorito=true",
         icon: Heart,
-        iconColor: "text-rose-500",
+        color: "text-pink-400",
+        bg: "bg-pink-500/10",
         matchQuery: { favorito: "true" },
       },
     ],
@@ -142,16 +147,18 @@ const menuGroups: MenuGroup[] = [
     adminOnly: true,
     items: [
       {
-        label: "Configuracoes",
+        label: "Configurações",
         href: "/configuracoes",
         icon: Settings,
-        iconColor: "text-slate-400",
+        color: "text-gray-400",
+        bg: "bg-gray-500/10",
       },
       {
-        label: "Usuarios",
+        label: "Usuários",
         href: "/usuarios",
         icon: Users,
-        iconColor: "text-gray-400",
+        color: "text-pink-400",
+        bg: "bg-pink-500/10",
       },
     ],
   },
@@ -256,29 +263,23 @@ function SidebarMenuItem({
         href={item.href}
         onClick={onNavigate}
         className={cn(
-          "group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
+          "group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all duration-200",
           active
-            ? "bg-sidebar-accent text-sidebar-accent-foreground"
-            : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
+            ? "sidebar-item-active text-white"
+            : "text-gray-400 hover:bg-white/[0.04] hover:text-white",
           collapsed && "justify-center px-0"
         )}
       >
-        {/* Active accent bar */}
-        {active && (
-          <motion.div
-            layoutId="sidebar-active-indicator"
-            className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-[3px] rounded-r-full bg-primary"
-            transition={{ type: "spring", stiffness: 350, damping: 30 }}
+        {/* Icon wrapper with colored background */}
+        <div className={cn("sidebar-icon-wrap shrink-0", active ? item.bg : "")}>
+          <Icon
+            className={cn(
+              "w-[18px] h-[18px] transition-colors",
+              active ? item.color : "text-muted-foreground/70"
+            )}
+            strokeWidth={active ? 2 : 1.75}
           />
-        )}
-
-        <Icon
-          className={cn(
-            "h-[18px] w-[18px] shrink-0 transition-colors duration-200",
-            active ? item.iconColor : "text-muted-foreground",
-            !active && "group-hover:" + item.iconColor
-          )}
-        />
+        </div>
 
         <AnimatePresence mode="wait">
           {!collapsed && (
@@ -288,7 +289,10 @@ function SidebarMenuItem({
               animate={{ opacity: 1, width: "auto" }}
               exit={{ opacity: 0, width: 0 }}
               transition={{ duration: 0.15 }}
-              className="truncate"
+              className={cn(
+                "flex-1 truncate",
+                active ? "font-medium text-white" : "text-gray-400"
+              )}
             >
               {item.label}
             </motion.span>
@@ -331,16 +335,16 @@ function SidebarContent({
           collapsed && "justify-center px-3"
         )}
       >
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-          <Sparkles className="h-5 w-5 text-primary" />
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-600">
+          <Sparkles className="h-5 w-5 text-white" />
         </div>
         {!collapsed && (
           <div className="flex flex-col overflow-hidden">
-            <span className="text-sm font-semibold tracking-tight text-sidebar-foreground">
+            <span className="text-sm font-bold tracking-tight text-white">
               Creative Machine
             </span>
-            <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
-              by CENAT
+            <span className="text-[10px] uppercase tracking-widest text-violet-300">
+              BY CENAT
             </span>
           </div>
         )}
@@ -354,9 +358,9 @@ function SidebarContent({
           return (
             <div key={group.title}>
               {!collapsed && (
-                <h4 className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+                <span className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground px-3 mb-2 block">
                   {group.title}
-                </h4>
+                </span>
               )}
               {collapsed && (
                 <div className="mb-2 flex justify-center">
@@ -385,7 +389,7 @@ function SidebarContent({
           <button
             onClick={toggleTheme}
             className={cn(
-              "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
+              "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-white/[0.04] hover:text-white",
               collapsed && "justify-center px-0"
             )}
             aria-label={theme === "dark" ? "Ativar modo claro" : "Ativar modo escuro"}
@@ -407,32 +411,29 @@ function SidebarContent({
         {user && (
           <div
             className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2",
+              "flex items-center gap-3 px-2 py-2 rounded-lg bg-white/[0.03]",
               collapsed && "justify-center px-0"
             )}
           >
-            <Avatar className="h-8 w-8 shrink-0">
-              {user.avatar_url && <AvatarImage src={user.avatar_url} alt={user.name} />}
-              <AvatarFallback className="bg-primary/20 text-xs font-semibold text-primary">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
+            <div className="h-9 w-9 rounded-full bg-violet-600/20 flex items-center justify-center text-violet-400 text-xs font-bold shrink-0">
+              {initials}
+            </div>
 
             {!collapsed && (
-              <div className="flex flex-1 flex-col overflow-hidden">
-                <span className="truncate text-sm font-medium text-sidebar-foreground">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-white truncate">
                   {user.name}
-                </span>
-                <span className="truncate text-[11px] text-muted-foreground">
+                </p>
+                <p className="text-[11px] text-muted-foreground truncate">
                   {user.email}
-                </span>
+                </p>
               </div>
             )}
 
             {!collapsed && (
               <button
                 onClick={logout}
-                className="shrink-0 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-red-400"
+                className="shrink-0 rounded-md p-1.5 text-gray-500 hover:text-white transition-colors"
                 aria-label="Sair"
               >
                 <LogOut className="h-4 w-4" />

@@ -9,16 +9,12 @@ import { toast } from "sonner";
 import {
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select } from "@/components/ui/select";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import {
   Dialog,
@@ -33,7 +29,6 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import {
   Users,
@@ -58,6 +53,7 @@ export default function UsuariosPage() {
 
   const [users, setUsers] = useState<UserItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
 
   // Create user dialog
   const [createOpen, setCreateOpen] = useState(false);
@@ -79,13 +75,17 @@ export default function UsuariosPage() {
     }
   }, [user, authLoading, router]);
 
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const fetchUsers = useCallback(async () => {
     try {
       setLoading(true);
       const { data } = await api.get("/auth/users");
       setUsers(data);
     } catch {
-      toast.error("Erro ao carregar usuarios");
+      toast.error("Erro ao carregar usuários");
     } finally {
       setLoading(false);
     }
@@ -117,7 +117,7 @@ export default function UsuariosPage() {
         password: createPassword,
         role: createRole,
       });
-      toast.success("Usuario criado com sucesso");
+      toast.success("Usuário criado com sucesso");
       setCreateOpen(false);
       setCreateName("");
       setCreateEmail("");
@@ -126,7 +126,7 @@ export default function UsuariosPage() {
       fetchUsers();
     } catch (err: any) {
       const message =
-        err?.response?.data?.detail || "Erro ao criar usuario";
+        err?.response?.data?.detail || "Erro ao criar usuário";
       toast.error(message);
     } finally {
       setCreating(false);
@@ -142,13 +142,13 @@ export default function UsuariosPage() {
       await api.patch(`/auth/users/${editUser.id}/role`, {
         role: editNewRole,
       });
-      toast.success("Funcao atualizada com sucesso");
+      toast.success("Função atualizada com sucesso");
       setEditRoleOpen(false);
       setEditUser(null);
       fetchUsers();
     } catch (err: any) {
       const message =
-        err?.response?.data?.detail || "Erro ao atualizar funcao";
+        err?.response?.data?.detail || "Erro ao atualizar função";
       toast.error(message);
     } finally {
       setUpdatingRole(false);
@@ -202,12 +202,12 @@ export default function UsuariosPage() {
             Acesso Restrito
           </h2>
           <p className="text-sm text-muted-foreground text-center max-w-md">
-            Voce nao tem permissao para acessar esta pagina. Apenas
-            administradores podem gerenciar usuarios.
+            Você não tem permissão para acessar esta página. Apenas
+            administradores podem gerenciar usuários.
           </p>
           <Button
             variant="outline"
-            className="mt-6"
+            className="mt-6 active:scale-[0.98]"
             onClick={() => router.push("/dashboard")}
           >
             Voltar ao Dashboard
@@ -219,31 +219,31 @@ export default function UsuariosPage() {
 
   return (
     <AppShell>
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="max-w-4xl mx-auto space-y-6 px-6 py-8 animate-fade-in">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Users className="w-5 h-5 text-primary" />
+            <div className="w-10 h-10 rounded-lg bg-pink-500/10 flex items-center justify-center">
+              <Users className="w-5 h-5 text-pink-400" />
             </div>
             <div>
               <h1 className="text-2xl font-bold text-foreground">
-                Gerenciamento de Usuarios
+                Gerenciamento de Usuários
               </h1>
               <p className="text-sm text-muted-foreground">
-                Gerencie as contas e permissoes
+                Gerencie as contas e permissões
               </p>
             </div>
           </div>
-          <Button onClick={() => setCreateOpen(true)}>
+          <Button onClick={() => setCreateOpen(true)} className="active:scale-[0.98] transition-transform">
             <Plus className="w-4 h-4" />
-            Novo Usuario
+            Novo Usuário
           </Button>
         </div>
 
         {/* Users list */}
         {loading ? (
-          <Card>
+          <Card className="border border-border">
             <CardContent className="py-8">
               <div className="flex items-center justify-center">
                 <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -251,61 +251,62 @@ export default function UsuariosPage() {
             </CardContent>
           </Card>
         ) : users.length === 0 ? (
-          <Card>
+          <Card className="border border-border">
             <CardContent className="flex flex-col items-center justify-center py-16">
-              <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center mb-4">
-                <Users className="w-8 h-8 text-muted-foreground" />
+              <div className="w-16 h-16 rounded-full bg-violet-500/10 flex items-center justify-center mb-4">
+                <Users className="w-8 h-8 text-violet-400" />
               </div>
               <h3 className="text-lg font-semibold text-foreground mb-1">
-                Nenhum usuario encontrado
+                Nenhum usuário encontrado
               </h3>
               <p className="text-sm text-muted-foreground mb-4">
-                Crie o primeiro usuario para comecar
+                Crie o primeiro usuário para começar
               </p>
-              <Button onClick={() => setCreateOpen(true)}>
+              <Button onClick={() => setCreateOpen(true)} className="active:scale-[0.98]">
                 <Plus className="w-4 h-4" />
-                Novo Usuario
+                Novo Usuário
               </Button>
             </CardContent>
           </Card>
         ) : (
           <>
             {/* Desktop table */}
-            <Card className="hidden md:block">
+            <Card className="hidden md:block border border-border overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-border">
+                    <tr className="border-b border-border bg-white/[0.02]">
                       <th className="text-left text-xs font-medium text-muted-foreground px-6 py-3">
-                        Usuario
+                        Usuário
                       </th>
                       <th className="text-left text-xs font-medium text-muted-foreground px-6 py-3">
                         Email
                       </th>
                       <th className="text-left text-xs font-medium text-muted-foreground px-6 py-3">
-                        Funcao
+                        Função
                       </th>
                       <th className="text-left text-xs font-medium text-muted-foreground px-6 py-3">
-                        Data de Criacao
+                        Data de Criação
                       </th>
                       <th className="text-right text-xs font-medium text-muted-foreground px-6 py-3">
-                        Acoes
+                        Ações
                       </th>
                     </tr>
                   </thead>
                   <tbody>
-                    {users.map((u) => (
+                    {users.map((u, i) => (
                       <tr
                         key={u.id}
-                        className="border-b border-border last:border-b-0 hover:bg-secondary/30 transition-colors"
+                        className={`border-b border-border last:border-b-0 hover:bg-white/[0.02] transition-all duration-200 ${
+                          mounted ? "animate-fade-in" : "opacity-0"
+                        }`}
+                        style={{ animationDelay: `${i * 50}ms`, animationFillMode: "forwards" }}
                       >
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
-                            <Avatar className="w-8 h-8">
-                              <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                                {getInitials(u.name)}
-                              </AvatarFallback>
-                            </Avatar>
+                            <div className="w-8 h-8 rounded-full bg-violet-600/20 flex items-center justify-center text-violet-400 text-xs font-bold">
+                              {getInitials(u.name)}
+                            </div>
                             <span className="text-sm font-medium text-foreground">
                               {u.name}
                             </span>
@@ -320,6 +321,11 @@ export default function UsuariosPage() {
                           <Badge
                             variant={
                               u.role === "admin" ? "default" : "secondary"
+                            }
+                            className={
+                              u.role === "admin"
+                                ? "bg-violet-500/10 text-violet-400 border-0"
+                                : "bg-gray-500/10 text-gray-400 border-0"
                             }
                           >
                             {u.role === "admin" && (
@@ -349,7 +355,7 @@ export default function UsuariosPage() {
                                 onClick={() => openEditRole(u)}
                               >
                                 <UserCog className="w-4 h-4" />
-                                Editar Funcao
+                                Editar Função
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -363,16 +369,20 @@ export default function UsuariosPage() {
 
             {/* Mobile cards */}
             <div className="space-y-3 md:hidden">
-              {users.map((u) => (
-                <Card key={u.id}>
+              {users.map((u, i) => (
+                <Card
+                  key={u.id}
+                  className={`border border-border hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200 ${
+                    mounted ? "animate-fade-in" : "opacity-0"
+                  }`}
+                  style={{ animationDelay: `${i * 50}ms`, animationFillMode: "forwards" }}
+                >
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-3">
-                        <Avatar className="w-10 h-10">
-                          <AvatarFallback className="bg-primary/10 text-primary text-sm">
-                            {getInitials(u.name)}
-                          </AvatarFallback>
-                        </Avatar>
+                        <div className="w-10 h-10 rounded-full bg-violet-600/20 flex items-center justify-center text-violet-400 text-sm font-bold">
+                          {getInitials(u.name)}
+                        </div>
                         <div>
                           <p className="text-sm font-medium text-foreground">
                             {u.name}
@@ -395,7 +405,7 @@ export default function UsuariosPage() {
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => openEditRole(u)}>
                             <UserCog className="w-4 h-4" />
-                            Editar Funcao
+                            Editar Função
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -404,6 +414,11 @@ export default function UsuariosPage() {
                       <Badge
                         variant={
                           u.role === "admin" ? "default" : "secondary"
+                        }
+                        className={
+                          u.role === "admin"
+                            ? "bg-violet-500/10 text-violet-400 border-0"
+                            : "bg-gray-500/10 text-gray-400 border-0"
                         }
                       >
                         {u.role === "admin" && (
@@ -438,9 +453,9 @@ export default function UsuariosPage() {
       >
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Novo Usuario</DialogTitle>
+            <DialogTitle>Novo Usuário</DialogTitle>
             <DialogDescription>
-              Crie uma nova conta de usuario para a plataforma
+              Crie uma nova conta de usuário para a plataforma
             </DialogDescription>
           </DialogHeader>
 
@@ -471,14 +486,14 @@ export default function UsuariosPage() {
               <Input
                 id="create-password"
                 type="password"
-                placeholder="Minimo 6 caracteres"
+                placeholder="Mínimo 6 caracteres"
                 value={createPassword}
                 onChange={(e) => setCreatePassword(e.target.value)}
                 required
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="create-role">Funcao</Label>
+              <Label htmlFor="create-role">Função</Label>
               <Select
                 id="create-role"
                 value={createRole}
@@ -497,9 +512,9 @@ export default function UsuariosPage() {
               >
                 Cancelar
               </Button>
-              <Button type="submit" loading={creating}>
+              <Button type="submit" loading={creating} className="active:scale-[0.98]">
                 <Plus className="w-4 h-4" />
-                Criar Usuario
+                Criar Usuário
               </Button>
             </DialogFooter>
           </form>
@@ -516,9 +531,9 @@ export default function UsuariosPage() {
       >
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Editar Funcao</DialogTitle>
+            <DialogTitle>Editar Função</DialogTitle>
             <DialogDescription>
-              Altere a funcao de{" "}
+              Altere a função de{" "}
               <span className="font-medium text-foreground">
                 {editUser?.name}
               </span>
@@ -530,12 +545,17 @@ export default function UsuariosPage() {
               <div className="space-y-3">
                 <div>
                   <span className="text-xs text-muted-foreground">
-                    Funcao atual
+                    Função atual
                   </span>
                   <div className="mt-1">
                     <Badge
                       variant={
                         editUser.role === "admin" ? "default" : "secondary"
+                      }
+                      className={
+                        editUser.role === "admin"
+                          ? "bg-violet-500/10 text-violet-400 border-0"
+                          : "bg-gray-500/10 text-gray-400 border-0"
                       }
                     >
                       {editUser.role === "admin" && (
@@ -549,7 +569,7 @@ export default function UsuariosPage() {
                 <Separator />
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="edit-role">Nova Funcao</Label>
+                  <Label htmlFor="edit-role">Nova Função</Label>
                   <Select
                     id="edit-role"
                     value={editNewRole}
@@ -569,7 +589,7 @@ export default function UsuariosPage() {
                 >
                   Cancelar
                 </Button>
-                <Button type="submit" loading={updatingRole}>
+                <Button type="submit" loading={updatingRole} className="active:scale-[0.98]">
                   Salvar
                 </Button>
               </DialogFooter>

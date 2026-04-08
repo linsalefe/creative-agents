@@ -97,9 +97,9 @@ export default function VariacoesPage() {
   const [result, setResult] = useState<VariationOutput | null>(null);
 
   const initialSteps: PipelineStep[] = [
-    { id: "vision", label: "Analise", icon: Eye, status: "pending" },
+    { id: "vision", label: "Análise", icon: Eye, status: "pending" },
     { id: "variation", label: "Copys", icon: PenLine, status: "pending" },
-    { id: "generation", label: "Edicao", icon: Cpu, status: "pending" },
+    { id: "generation", label: "Edição", icon: Cpu, status: "pending" },
   ];
   const [steps, setSteps] = useState<PipelineStep[]>(initialSteps);
 
@@ -139,7 +139,6 @@ export default function VariacoesPage() {
 
   // ---------- Progress simulation ----------
   const simulateProgress = useCallback(() => {
-    // Vision: 0-5s, Variation: 5-12s, Generation: 12-30s
     const timeouts: ReturnType<typeof setTimeout>[] = [];
 
     timeouts.push(
@@ -200,14 +199,12 @@ export default function VariacoesPage() {
         { headers: { "Content-Type": "multipart/form-data" } }
       );
 
-      // Mark all steps as completed
       setSteps((prev) => prev.map((s) => ({ ...s, status: "completed" as StepStatus })));
       setResult(data);
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "Erro ao gerar variacoes";
+        err instanceof Error ? err.message : "Erro ao gerar variações";
       toast.error(message);
-      // Reset active steps back to pending
       setSteps((prev) =>
         prev.map((s) =>
           s.status === "active" ? { ...s, status: "pending" as StepStatus } : s
@@ -260,24 +257,24 @@ export default function VariacoesPage() {
 
   return (
     <AppShell>
-      <div className="max-w-5xl mx-auto space-y-8">
+      <div className="max-w-5xl mx-auto space-y-8 px-6 py-8 animate-fade-in">
         {/* Header */}
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-            <Layers className="w-5 h-5 text-primary" />
+          <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
+            <Layers className="w-5 h-5 text-amber-400" />
           </div>
           <div>
             <h1 className="text-xl font-bold text-foreground">
-              Gerar Variacoes
+              Gerar Variações
             </h1>
             <p className="text-sm text-muted-foreground">
-              Envie a imagem de um criativo e gere 5 variacoes automaticamente.
+              Envie a imagem de um criativo e gere 5 variações automaticamente.
             </p>
           </div>
         </div>
 
         {/* Upload card */}
-        <Card className="animate-slide-up">
+        <Card className="border border-border">
           <CardContent className="p-6">
             <form onSubmit={handleSubmit} className="space-y-5">
               {/* Upload / Preview area */}
@@ -294,25 +291,25 @@ export default function VariacoesPage() {
                     relative flex flex-col items-center justify-center gap-3 p-12 rounded-xl border-2 border-dashed cursor-pointer transition-all duration-200
                     ${
                       dragging
-                        ? "border-primary bg-primary/5"
-                        : "border-border hover:border-muted-foreground hover:bg-secondary/30"
+                        ? "border-violet-500/40 bg-violet-500/[0.02]"
+                        : "border-violet-500/20 hover:border-violet-500/40 hover:bg-violet-500/[0.02]"
                     }
                   `}
                 >
                   <div
                     className={`w-14 h-14 rounded-full flex items-center justify-center transition-colors ${
-                      dragging ? "bg-primary/15" : "bg-secondary"
+                      dragging ? "bg-violet-500/15" : "bg-secondary"
                     }`}
                   >
                     <Upload
                       className={`w-6 h-6 ${
-                        dragging ? "text-primary" : "text-muted-foreground"
+                        dragging ? "text-violet-400" : "text-violet-400"
                       }`}
                     />
                   </div>
                   <div className="text-center">
                     <p className="text-sm text-foreground">
-                      <span className="text-primary font-medium">
+                      <span className="text-violet-400 font-medium">
                         Clique para selecionar
                       </span>{" "}
                       ou arraste uma imagem
@@ -333,18 +330,18 @@ export default function VariacoesPage() {
                   />
                 </div>
               ) : (
-                <div className="rounded-xl border border-border bg-card overflow-hidden">
+                <div className="rounded-xl border border-border bg-white/[0.02] overflow-hidden">
                   <div className="flex items-start gap-4 p-4">
-                    <div className="relative w-48 max-w-full rounded-lg overflow-hidden flex-shrink-0 bg-secondary">
+                    <div className="relative w-48 max-w-full rounded-xl overflow-hidden flex-shrink-0 shadow-2xl">
                       <img
                         src={preview}
                         alt="Preview"
-                        className="w-full h-auto object-cover rounded-lg"
+                        className="w-full h-auto object-cover rounded-xl"
                       />
                     </div>
                     <div className="flex-1 min-w-0 py-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <ImageIcon className="w-4 h-4 text-primary" />
+                        <ImageIcon className="w-4 h-4 text-violet-400" />
                         <span className="text-sm font-medium text-foreground truncate">
                           {file?.name}
                         </span>
@@ -356,7 +353,7 @@ export default function VariacoesPage() {
                     <button
                       type="button"
                       onClick={clearFile}
-                      className="p-1.5 rounded-lg bg-secondary hover:bg-destructive/15 text-muted-foreground hover:text-destructive transition-colors"
+                      className="p-1.5 rounded-lg bg-white/[0.04] hover:bg-destructive/15 text-muted-foreground hover:text-destructive transition-colors"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -370,10 +367,10 @@ export default function VariacoesPage() {
                 size="lg"
                 loading={loading}
                 disabled={!file}
-                className="w-full md:w-auto"
+                className="w-full md:w-auto active:scale-[0.98] transition-transform shadow-lg shadow-violet-600/20"
               >
                 <Sparkles className="w-4 h-4 mr-2" />
-                {loading ? "Gerando variacoes..." : "Gerar Variacoes"}
+                {loading ? "Gerando variações..." : "Gerar Variações"}
               </Button>
             </form>
           </CardContent>
@@ -381,10 +378,10 @@ export default function VariacoesPage() {
 
         {/* Pipeline progress */}
         {loading && (
-          <Card className="animate-fade-in glow-primary">
+          <Card className="animate-fade-in glow-primary border border-border">
             <CardHeader>
               <CardTitle className="text-base">
-                Pipeline de variacoes em execucao
+                Pipeline de variações em execução
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -402,7 +399,7 @@ export default function VariacoesPage() {
                             step.status === "completed"
                               ? "border-emerald-500/50 bg-emerald-500/15 text-emerald-400"
                               : step.status === "active"
-                              ? "border-amber-500/50 bg-amber-500/15 text-amber-400 agent-active"
+                              ? "border-violet-500/50 bg-violet-500/15 text-violet-400 agent-active"
                               : "border-border bg-secondary text-muted-foreground"
                           }`}
                         >
@@ -413,6 +410,10 @@ export default function VariacoesPage() {
                           ) : (
                             <Icon className="w-5 h-5" />
                           )}
+                          {/* Glow ring for active */}
+                          {step.status === "active" && (
+                            <div className="absolute inset-0 rounded-full border-2 border-violet-500/30 animate-ping" />
+                          )}
                         </div>
 
                         {/* Label */}
@@ -421,7 +422,7 @@ export default function VariacoesPage() {
                             step.status === "completed"
                               ? "text-emerald-400"
                               : step.status === "active"
-                              ? "text-amber-400"
+                              ? "text-violet-400"
                               : "text-muted-foreground"
                           }`}
                         >
@@ -455,25 +456,33 @@ export default function VariacoesPage() {
             {/* Results header */}
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
-                <Layers className="w-5 h-5 text-primary" />
-                {result.variacoes.length} Variacoes Geradas
+                <Layers className="w-5 h-5 text-violet-400" />
+                {result.variacoes.length} Variações Geradas
               </h2>
-              <Badge variant="success">Completo</Badge>
+              <div className="flex items-center gap-3">
+                <Badge variant="success">Completo</Badge>
+                {result.variacoes.some((v) => v.imagem_url) && (
+                  <Button variant="outline" size="sm" onClick={handleDownloadAll} className="active:scale-[0.98]">
+                    <Download className="w-4 h-4 mr-1.5" />
+                    Download Todas
+                  </Button>
+                )}
+              </div>
             </div>
 
             {/* Original analysis */}
-            <Card>
+            <Card className="border border-border">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base">
-                  <Eye className="w-4 h-4 text-primary" />
-                  Analise do Criativo Original
+                  <Eye className="w-4 h-4 text-violet-400" />
+                  Análise do Criativo Original
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   <AnalysisField label="Headline" value={result.analise.headline} />
                   <AnalysisField label="Tom" value={result.analise.tom} />
-                  <AnalysisField label="Publico" value={result.analise.publico} />
+                  <AnalysisField label="Público" value={result.analise.publico} />
                   <AnalysisField label="Objetivo" value={result.analise.objetivo} />
                   <AnalysisField label="Estilo Visual" value={result.analise.estilo_visual} />
                 </div>
@@ -483,7 +492,7 @@ export default function VariacoesPage() {
             {/* Variation cards grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {result.variacoes.map((item, i) => (
-                <Card key={i} className="group overflow-hidden p-0">
+                <Card key={i} className="group overflow-hidden p-0 border border-border hover:scale-[1.02] hover:shadow-xl transition-all duration-300">
                   {/* Image */}
                   {item.imagem_url ? (
                     <div className="relative aspect-square bg-secondary overflow-hidden">
@@ -493,24 +502,32 @@ export default function VariacoesPage() {
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      {/* Badge */}
+                      <div className="absolute top-3 left-3">
+                        <Badge variant="accent" className="text-[10px] shadow-lg">
+                          Variação {i + 1}
+                        </Badge>
+                      </div>
                       <button
                         onClick={() => handleDownload(item.imagem_url!, i)}
-                        className="absolute bottom-2 right-2 p-2 bg-black/50 backdrop-blur-sm rounded-lg border border-white/20 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-black/70"
+                        className="absolute bottom-3 right-3 p-2 bg-black/50 backdrop-blur-sm rounded-lg border border-white/20 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-black/70 active:scale-[0.98]"
                       >
                         <Download className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   ) : (
-                    <div className="aspect-square bg-secondary flex items-center justify-center">
+                    <div className="aspect-square bg-secondary flex items-center justify-center relative">
                       <PenLine className="w-8 h-8 text-muted-foreground" />
+                      <div className="absolute top-3 left-3">
+                        <Badge variant="accent" className="text-[10px]">
+                          Variação {i + 1}
+                        </Badge>
+                      </div>
                     </div>
                   )}
 
                   {/* Copy */}
                   <CardContent className="p-4 space-y-2">
-                    <Badge variant="accent" className="text-[10px]">
-                      Variacao {i + 1}
-                    </Badge>
                     <p className="text-sm font-semibold text-foreground leading-tight">
                       {item.copy.headline}
                     </p>
@@ -518,7 +535,7 @@ export default function VariacoesPage() {
                       {item.copy.subheadline}
                     </p>
                     <div className="pt-1">
-                      <span className="inline-block px-3 py-1 bg-primary/15 border border-primary/30 rounded-md text-primary text-xs font-medium">
+                      <span className="inline-block px-3 py-1 bg-violet-500/15 border border-violet-500/30 rounded-md text-violet-400 text-xs font-medium">
                         {item.copy.cta}
                       </span>
                     </div>
@@ -526,16 +543,6 @@ export default function VariacoesPage() {
                 </Card>
               ))}
             </div>
-
-            {/* Download all */}
-            {result.variacoes.some((v) => v.imagem_url) && (
-              <div className="flex justify-center">
-                <Button variant="outline" onClick={handleDownloadAll}>
-                  <Download className="w-4 h-4 mr-2" />
-                  Download Todas
-                </Button>
-              </div>
-            )}
           </div>
         )}
       </div>

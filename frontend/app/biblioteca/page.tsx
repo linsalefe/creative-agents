@@ -35,6 +35,7 @@ import {
   Trash2,
   Layers,
   FolderOpen,
+  ImagePlus,
 } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -121,7 +122,6 @@ function BibliotecaContent() {
       const { data } = await api.get(`/artes/${query ? `?${query}` : ""}`);
       setArtes(data);
 
-      // Extract unique pastas
       const uniquePastas = Array.from(
         new Set(
           data
@@ -170,7 +170,7 @@ function BibliotecaContent() {
       setArtes((prev) => prev.filter((a) => a.id !== id));
       setDetailOpen(false);
       setSelectedArte(null);
-      toast.success("Arte excluida com sucesso");
+      toast.success("Arte excluída com sucesso");
     } catch {
       toast.error("Erro ao excluir arte");
     } finally {
@@ -258,18 +258,18 @@ function BibliotecaContent() {
 
   return (
     <AppShell>
-      <div className="space-y-6">
+      <div className="space-y-6 px-6 py-8 animate-fade-in">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
+          <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold text-foreground">
               Biblioteca de Artes
             </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Gerencie e organize seus criativos
-            </p>
+            <Badge variant="secondary" className="text-xs">
+              {artes.length}
+            </Badge>
           </div>
-          <Button onClick={() => setUploadOpen(true)}>
+          <Button onClick={() => setUploadOpen(true)} className="active:scale-[0.98] transition-transform">
             <Plus className="w-4 h-4" />
             Nova Arte
           </Button>
@@ -280,10 +280,10 @@ function BibliotecaContent() {
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => setPastaFilter("")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 active:scale-[0.98] ${
                 pastaFilter === ""
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                  ? "bg-violet-600 text-white shadow-lg shadow-violet-600/25"
+                  : "bg-white/[0.04] border border-white/[0.06] text-gray-400 hover:text-white hover:bg-white/[0.06]"
               }`}
             >
               Todas
@@ -294,10 +294,10 @@ function BibliotecaContent() {
                 onClick={() =>
                   setPastaFilter(pastaFilter === pasta ? "" : pasta)
                 }
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 active:scale-[0.98] ${
                   pastaFilter === pasta
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                    ? "bg-violet-600 text-white shadow-lg shadow-violet-600/25"
+                    : "bg-white/[0.04] border border-white/[0.06] text-gray-400 hover:text-white hover:bg-white/[0.06]"
                 }`}
               >
                 <FolderOpen className="w-3 h-3" />
@@ -333,7 +333,7 @@ function BibliotecaContent() {
           <Button
             variant={favoritoFilter ? "default" : "outline"}
             onClick={toggleFavoritoFilter}
-            className="sm:w-auto"
+            className="sm:w-auto active:scale-[0.98] transition-transform"
           >
             <Heart
               className={`w-4 h-4 ${
@@ -350,24 +350,23 @@ function BibliotecaContent() {
             {Array.from({ length: 8 }).map((_, i) => (
               <div
                 key={i}
-                className="aspect-square rounded-lg bg-secondary animate-pulse"
+                className="aspect-square rounded-xl bg-white/[0.02] border border-border animate-shimmer"
               />
             ))}
           </div>
         ) : artes.length === 0 ? (
-          /* Empty state */
-          <Card>
+          <Card className="border border-border">
             <CardContent className="flex flex-col items-center justify-center py-16">
-              <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center mb-4">
-                <ImageIcon className="w-8 h-8 text-muted-foreground" />
+              <div className="w-16 h-16 rounded-full bg-violet-500/10 flex items-center justify-center mb-4">
+                <ImagePlus className="w-8 h-8 text-violet-400" />
               </div>
               <h3 className="text-lg font-semibold text-foreground mb-1">
-                Nenhuma arte na biblioteca
+                Suba sua primeira arte
               </h3>
               <p className="text-sm text-muted-foreground mb-4">
                 Comece enviando sua primeira arte
               </p>
-              <Button onClick={() => setUploadOpen(true)}>
+              <Button onClick={() => setUploadOpen(true)} className="active:scale-[0.98]">
                 <Upload className="w-4 h-4" />
                 Enviar Arte
               </Button>
@@ -378,7 +377,7 @@ function BibliotecaContent() {
             {artes.map((arte) => (
               <div
                 key={arte.id}
-                className="group relative cursor-pointer rounded-lg overflow-hidden border border-border bg-card transition-all duration-200 hover:shadow-lg hover:border-primary/30"
+                className="group relative cursor-pointer rounded-xl overflow-hidden border border-border bg-white/[0.02] transition-all duration-300 hover:scale-[1.03] hover:shadow-xl hover:border-violet-500/20"
                 onClick={() => openDetail(arte)}
               >
                 {/* Image */}
@@ -390,6 +389,30 @@ function BibliotecaContent() {
                   />
                   {/* Hover overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                  {/* Actions on hover */}
+                  <div className="absolute inset-0 flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <button
+                      onClick={(e) => toggleFavorito(arte, e)}
+                      className="p-2.5 rounded-full bg-black/40 backdrop-blur-sm text-white hover:bg-black/60 transition-colors active:scale-[0.98]"
+                    >
+                      <Heart
+                        className={`w-4 h-4 ${
+                          arte.favorito ? "fill-red-500 text-red-500" : ""
+                        }`}
+                      />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        router.push("/variacoes");
+                      }}
+                      className="p-2.5 rounded-full bg-black/40 backdrop-blur-sm text-white hover:bg-black/60 transition-colors active:scale-[0.98]"
+                    >
+                      <Layers className="w-4 h-4" />
+                    </button>
+                  </div>
+
                   {/* Headline on hover */}
                   {arte.analise_json?.headline && (
                     <div className="absolute bottom-0 left-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
@@ -398,17 +421,6 @@ function BibliotecaContent() {
                       </p>
                     </div>
                   )}
-                  {/* Favorite button */}
-                  <button
-                    onClick={(e) => toggleFavorito(arte, e)}
-                    className="absolute top-2 right-2 p-1.5 rounded-full bg-black/40 backdrop-blur-sm text-white hover:bg-black/60 transition-colors z-10"
-                  >
-                    <Heart
-                      className={`w-4 h-4 ${
-                        arte.favorito ? "fill-red-500 text-red-500" : ""
-                      }`}
-                    />
-                  </button>
                 </div>
 
                 {/* Tags */}
@@ -418,7 +430,7 @@ function BibliotecaContent() {
                       <Badge
                         key={tag}
                         variant="secondary"
-                        className="text-[10px] px-1.5 py-0"
+                        className="text-[10px] px-1.5 py-0 bg-violet-500/10 text-violet-400 border-0"
                       >
                         {tag}
                       </Badge>
@@ -451,8 +463,7 @@ function BibliotecaContent() {
 
           {selectedArte && (
             <div className="space-y-4">
-              {/* Large image preview */}
-              <div className="rounded-lg overflow-hidden border border-border bg-secondary/30">
+              <div className="rounded-xl overflow-hidden border border-border bg-white/[0.02]">
                 <img
                   src={resolveUrl(selectedArte.file_path)}
                   alt={selectedArte.filename}
@@ -460,11 +471,10 @@ function BibliotecaContent() {
                 />
               </div>
 
-              {/* Analysis details */}
               {selectedArte.analise_json && (
-                <Card>
+                <Card className="border border-border">
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-sm">Analise</CardTitle>
+                    <CardTitle className="text-sm">Análise</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -488,7 +498,7 @@ function BibliotecaContent() {
                       )}
                       {selectedArte.analise_json.publico && (
                         <DetailRow
-                          label="Publico"
+                          label="Público"
                           value={selectedArte.analise_json.publico}
                         />
                       )}
@@ -500,7 +510,7 @@ function BibliotecaContent() {
                       )}
                       {selectedArte.analise_json.descricao_fundo && (
                         <DetailRow
-                          label="Descricao do Fundo"
+                          label="Descrição do Fundo"
                           value={selectedArte.analise_json.descricao_fundo}
                         />
                       )}
@@ -509,13 +519,12 @@ function BibliotecaContent() {
                 </Card>
               )}
 
-              {/* Tags */}
               {selectedArte.tags && selectedArte.tags.length > 0 && (
                 <div>
                   <p className="text-xs text-muted-foreground mb-2">Tags</p>
                   <div className="flex flex-wrap gap-1.5">
                     {selectedArte.tags.map((tag) => (
-                      <Badge key={tag} variant="secondary">
+                      <Badge key={tag} variant="secondary" className="bg-violet-500/10 text-violet-400 border-0">
                         {tag}
                       </Badge>
                     ))}
@@ -523,12 +532,12 @@ function BibliotecaContent() {
                 </div>
               )}
 
-              {/* Favorite toggle */}
               <div className="flex items-center gap-2">
                 <Button
                   variant={selectedArte.favorito ? "default" : "outline"}
                   size="sm"
                   onClick={() => toggleFavorito(selectedArte)}
+                  className="active:scale-[0.98]"
                 >
                   <Heart
                     className={`w-4 h-4 ${
@@ -541,7 +550,6 @@ function BibliotecaContent() {
                 </Button>
               </div>
 
-              {/* Actions */}
               <DialogFooter className="gap-2 sm:gap-0">
                 <Button
                   variant="outline"
@@ -549,14 +557,16 @@ function BibliotecaContent() {
                     setDetailOpen(false);
                     router.push("/variacoes");
                   }}
+                  className="active:scale-[0.98]"
                 >
                   <Layers className="w-4 h-4" />
-                  Gerar Variacoes
+                  Gerar Variações
                 </Button>
                 <Button
                   variant="destructive"
                   onClick={() => deleteArte(selectedArte.id)}
                   loading={deleting}
+                  className="active:scale-[0.98]"
                 >
                   <Trash2 className="w-4 h-4" />
                   Excluir
@@ -583,12 +593,11 @@ function BibliotecaContent() {
           <DialogHeader>
             <DialogTitle>Enviar Nova Arte</DialogTitle>
             <DialogDescription>
-              Faca upload de uma imagem para a biblioteca
+              Faça upload de uma imagem para a biblioteca
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleUpload} className="space-y-4">
-            {/* File upload zone */}
             {!uploadPreview ? (
               <div
                 onDragOver={(e) => {
@@ -600,24 +609,24 @@ function BibliotecaContent() {
                 onClick={() => fileInputRef.current?.click()}
                 className={`relative flex flex-col items-center justify-center gap-3 p-10 rounded-xl border-2 border-dashed cursor-pointer transition-all duration-200 ${
                   dragging
-                    ? "border-primary bg-primary/10"
-                    : "border-border hover:border-primary/50 hover:bg-secondary/50"
+                    ? "border-violet-500/40 bg-violet-500/[0.02]"
+                    : "border-violet-500/20 hover:border-violet-500/40 hover:bg-violet-500/[0.02]"
                 }`}
               >
                 <div
                   className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
-                    dragging ? "bg-primary/20" : "bg-secondary"
+                    dragging ? "bg-violet-500/15" : "bg-white/[0.04]"
                   }`}
                 >
                   <Upload
                     className={`w-5 h-5 ${
-                      dragging ? "text-primary" : "text-muted-foreground"
+                      dragging ? "text-violet-400" : "text-violet-400"
                     }`}
                   />
                 </div>
                 <div className="text-center">
                   <p className="text-sm text-muted-foreground">
-                    <span className="text-primary font-medium">
+                    <span className="text-violet-400 font-medium">
                       Clique para selecionar
                     </span>{" "}
                     ou arraste uma imagem
@@ -640,7 +649,7 @@ function BibliotecaContent() {
             ) : (
               <div className="relative rounded-xl overflow-hidden border border-border">
                 <div className="flex items-start gap-4 p-4">
-                  <div className="relative w-24 h-24 rounded-lg overflow-hidden flex-shrink-0 bg-secondary">
+                  <div className="relative w-24 h-24 rounded-xl overflow-hidden flex-shrink-0 shadow-lg">
                     <img
                       src={uploadPreview}
                       alt="Preview"
@@ -649,7 +658,7 @@ function BibliotecaContent() {
                   </div>
                   <div className="flex-1 min-w-0 py-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <ImageIcon className="w-4 h-4 text-primary" />
+                      <ImageIcon className="w-4 h-4 text-violet-400" />
                       <span className="text-sm font-medium text-foreground truncate">
                         {uploadFile?.name}
                       </span>
@@ -661,7 +670,7 @@ function BibliotecaContent() {
                   <button
                     type="button"
                     onClick={clearUploadFile}
-                    className="p-1.5 rounded-lg bg-secondary hover:bg-destructive/15 text-muted-foreground hover:text-destructive transition-colors"
+                    className="p-1.5 rounded-lg bg-white/[0.04] hover:bg-destructive/15 text-muted-foreground hover:text-destructive transition-colors"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -669,23 +678,21 @@ function BibliotecaContent() {
               </div>
             )}
 
-            {/* Tags input */}
             <div className="space-y-1.5">
-              <Label htmlFor="upload-tags">Tags (separadas por virgula)</Label>
+              <Label htmlFor="upload-tags">Tags (separadas por vírgula)</Label>
               <Input
                 id="upload-tags"
-                placeholder="Ex: lancamento, instagram, produto"
+                placeholder="Ex: lançamento, instagram, produto"
                 value={uploadTags}
                 onChange={(e) => setUploadTags(e.target.value)}
               />
             </div>
 
-            {/* Pasta input */}
             <div className="space-y-1.5">
               <Label htmlFor="upload-pasta">Pasta</Label>
               <Input
                 id="upload-pasta"
-                placeholder="Ex: Campanha Verao 2026"
+                placeholder="Ex: Campanha Verão 2026"
                 value={uploadPasta}
                 onChange={(e) => setUploadPasta(e.target.value)}
                 list="pastas-list"
@@ -707,7 +714,7 @@ function BibliotecaContent() {
               >
                 Cancelar
               </Button>
-              <Button type="submit" loading={uploading} disabled={!uploadFile}>
+              <Button type="submit" loading={uploading} disabled={!uploadFile} className="active:scale-[0.98]">
                 <Upload className="w-4 h-4" />
                 Enviar
               </Button>
