@@ -13,7 +13,12 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:8000",
+        "https://creative.cenatdata.online",
+        "http://creative.cenatdata.online",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
