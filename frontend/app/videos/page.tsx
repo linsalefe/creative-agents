@@ -20,10 +20,10 @@ import { useAuth } from "@/contexts/auth-context";
 import api from "@/lib/api";
 import { toast } from "sonner";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
-
-const resolveUrl = (url: string) =>
-  url.startsWith("/static/") ? `${API_URL}${url}` : url;
+const resolveUrl = (url: string) => {
+  if (!url) return url;
+  return url.startsWith("/static/") ? url : url;
+};
 
 interface VideoOutput {
   id: string;

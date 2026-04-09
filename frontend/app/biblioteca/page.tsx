@@ -38,13 +38,9 @@ import {
   ImagePlus,
 } from "lucide-react";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
-
 function resolveUrl(url: string) {
   if (!url) return "";
-  return url.startsWith("/static/") || url.startsWith("/uploads/")
-    ? `${API_URL}${url}`
-    : url;
+  return url;
 }
 
 interface Arte {

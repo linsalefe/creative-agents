@@ -29,11 +29,11 @@ import {
   X,
   ImageIcon,
 } from "lucide-react";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+import api from "@/lib/api";
 
 function resolveUrl(url: string) {
-  return url.startsWith("/static/") ? `${API_URL}${url}` : url;
+  if (!url) return url;
+  return url.startsWith("/static/") ? url : url;
 }
 
 interface CreativeOutput {
@@ -152,11 +152,8 @@ export default function CriativosPage() {
 
   const fetchHistorico = async () => {
     try {
-      const res = await fetch(`${API_URL}/criativos/historico/`);
-      if (res.ok) {
-        const data = await res.json();
-        setHistorico(data);
-      }
+      const res = await api.get("/criativos/historico/");
+      setHistorico(res.data);
     } catch {
       // API may not be running
     }
@@ -198,28 +195,21 @@ export default function CriativosPage() {
     simulateProgress();
 
     try {
-      const res = await fetch(`${API_URL}/criativos/gerar`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          produto,
-          publico,
-          contexto,
-          plataforma: plataforma || null,
-        }),
+      const res = await api.post("/criativos/gerar", {
+        produto,
+        publico,
+        contexto,
+        plataforma: plataforma || null,
       });
-      if (!res.ok) {
-        const errData = await res.json().catch(() => null);
-        throw new Error(errData?.detail || `Erro ${res.status}`);
-      }
-      const data: CreativeOutput = await res.json();
+      const data: CreativeOutput = res.data;
       setAgentSteps((prev) =>
         prev.map((step) => ({ ...step, status: "completed" as const }))
       );
       setResult(data);
       setHistorico((prev) => [data, ...prev]);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao gerar criativo");
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { detail?: string } }; message?: string };
+      setError(error.response?.data?.detail || error.message || "Erro ao gerar criativo");
       setAgentSteps((prev) =>
         prev.map((step) =>
           step.status === "active" ? { ...step, status: "pending" } : step
@@ -293,21 +283,17 @@ export default function CriativosPage() {
       const formData = new FormData();
       formData.append("file", varFile);
 
-      const res = await fetch(`${API_URL}/criativos/variacoes`, {
-        method: "POST",
-        body: formData,
+      const res = await api.post("/criativos/variacoes", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
-      if (!res.ok) {
-        const errData = await res.json().catch(() => null);
-        throw new Error(errData?.detail || `Erro ${res.status}`);
-      }
-      const data: VariationOutput = await res.json();
+      const data: VariationOutput = res.data;
       setVarSteps((prev) =>
         prev.map((s) => ({ ...s, status: "completed" as const }))
       );
       setVarResult(data);
-    } catch (err) {
-      setVarError(err instanceof Error ? err.message : "Erro ao gerar variacoes");
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { detail?: string } }; message?: string };
+      setVarError(error.response?.data?.detail || error.message || "Erro ao gerar variacoes");
       setVarSteps((prev) =>
         prev.map((s) =>
           s.status === "active" ? { ...s, status: "pending" } : s

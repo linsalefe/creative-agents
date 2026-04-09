@@ -81,10 +81,9 @@ type FormatoOption = "feed" | "story" | "ambos";
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
-
 function resolveUrl(url: string) {
-  return url.startsWith("/static/") ? `${API_URL}${url}` : url;
+  if (!url) return url;
+  return url.startsWith("/static/") ? url : url;
 }
 
 function formatFileSize(bytes: number): string {
