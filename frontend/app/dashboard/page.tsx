@@ -22,6 +22,7 @@ import {
   Clock,
   MessageCircle,
 } from "lucide-react";
+import { InstallPrompt } from "@/components/install-prompt";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -182,6 +183,7 @@ export default function DashboardPage() {
   return (
     <AppShell>
       <div className="max-w-7xl mx-auto px-6 py-8 space-y-8 animate-fade-in">
+        <InstallPrompt />
         {/* ==================== Greeting Header + CTA ==================== */}
         <div className="flex items-start justify-between">
           <GreetingHeader />

@@ -17,7 +17,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Settings, User, Lock, Coins } from "lucide-react";
+import { Settings, User, Lock, Coins, Bell } from "lucide-react";
+import { usePushNotifications } from "@/hooks/use-push-notifications";
 
 export default function ConfiguracoesPage() {
   const { user, loading: authLoading, updateUser } = useAuth();
@@ -27,6 +28,9 @@ export default function ConfiguracoesPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [savingProfile, setSavingProfile] = useState(false);
+
+  // Push notifications
+  const { isSupported, isSubscribed, isLoading: pushLoading, subscribe, unsubscribe } = usePushNotifications();
 
   // Password state
   const [currentPassword, setCurrentPassword] = useState("");
@@ -165,6 +169,48 @@ export default function ConfiguracoesPage() {
             {(user?.credits ?? 0) < 100 && (
               <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
                 <p className="text-xs text-red-400 font-medium">Creditos baixos! Entre em contato com o administrador.</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Notifications section */}
+        <Card className="border border-border hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Bell className="w-5 h-5 text-primary" />
+              Notificações Push
+            </CardTitle>
+            <CardDescription>
+              Receba alertas quando seus criativos ficarem prontos
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {!isSupported ? (
+              <p className="text-sm text-muted-foreground">
+                Seu navegador não suporta notificações push
+              </p>
+            ) : (
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-foreground">
+                    {isSubscribed ? "Notificações: Ativas ✅" : "Notificações: Desativadas"}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {isSubscribed
+                      ? "Você receberá alertas de criativos e vídeos prontos"
+                      : "Ative para receber alertas quando seus criativos ficarem prontos"}
+                  </p>
+                </div>
+                <Button
+                  variant={isSubscribed ? "outline" : "default"}
+                  size="sm"
+                  onClick={isSubscribed ? unsubscribe : subscribe}
+                  disabled={pushLoading}
+                  className="active:scale-[0.98] transition-transform"
+                >
+                  {pushLoading ? "..." : isSubscribed ? "Desativar" : "Ativar"}
+                </Button>
               </div>
             )}
           </CardContent>

@@ -15,7 +15,8 @@ from models.variation import VariationOutput
 from models.db_models import User
 from agents.orchestrator import Orchestrator
 from routers.auth import get_current_user
-from services.database import get_db
+from services.database import get_db, SessionLocal
+from services.push_service import PushService
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +58,20 @@ async def _check_and_deduct_credits(user: User, db: AsyncSession) -> None:
     db_user.credits -= CREDIT_COST
     await db.commit()
 
+    if db_user.credits < 50:
+        try:
+            await push_service.send_to_user(
+                db=db,
+                user_id=db_user.id,
+                title="Créditos baixos ⚠️",
+                body=f"Você tem {db_user.credits} créditos restantes.",
+                url="/configuracoes",
+            )
+        except Exception:
+            pass
+
 orchestrator = Orchestrator()
+push_service = PushService()
 historico: dict[str, CreativeOutput] = {}
 
 # ---------------------------------------------------------------------------
@@ -74,6 +88,18 @@ async def _processar_job(job_id: str, image_data: bytes, mime_type: str, formato
         jobs[job_id].status = "completed"
         jobs[job_id].resultado = resultado
         jobs[job_id].completed_at = datetime.utcnow().isoformat()
+
+        try:
+            async with SessionLocal() as db:
+                await push_service.send_to_user(
+                    db=db,
+                    user_id=jobs[job_id].user_id,
+                    title="Criativo pronto! ✨",
+                    body="Seu criativo está pronto para download.",
+                    url="/criativos",
+                )
+        except Exception:
+            pass
     except Exception as e:
         jobs[job_id].status = "failed"
         jobs[job_id].erro = str(e)

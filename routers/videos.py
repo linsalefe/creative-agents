@@ -14,7 +14,8 @@ from models.video_output import VideoRequest, VideoOutput
 from models.db_models import User
 from agents.video_pipeline_agent import VideoPipelineAgent
 from routers.auth import get_current_user
-from services.database import get_db
+from services.database import get_db, SessionLocal
+from services.push_service import PushService
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +57,20 @@ async def _check_and_deduct_credits(user: User, db: AsyncSession) -> None:
     db_user.credits -= CREDIT_COST
     await db.commit()
 
+    if db_user.credits < 50:
+        try:
+            await push_service.send_to_user(
+                db=db,
+                user_id=db_user.id,
+                title="Créditos baixos ⚠️",
+                body=f"Você tem {db_user.credits} créditos restantes.",
+                url="/configuracoes",
+            )
+        except Exception:
+            pass
+
 pipeline = VideoPipelineAgent()
+push_service = PushService()
 
 # ---------------------------------------------------------------------------
 # Background task
@@ -69,6 +83,18 @@ async def _processar_video_job(job_id: str, request: VideoRequest):
         video_jobs[job_id].resultado = resultado
         video_jobs[job_id].completed_at = datetime.utcnow().isoformat()
         video_historico[resultado.id] = resultado
+
+        try:
+            async with SessionLocal() as db:
+                await push_service.send_to_user(
+                    db=db,
+                    user_id=video_jobs[job_id].user_id,
+                    title="Vídeo pronto! 🎬",
+                    body="Seu vídeo de marketing está pronto.",
+                    url="/videos",
+                )
+        except Exception:
+            pass
     except Exception as e:
         video_jobs[job_id].status = "failed"
         video_jobs[job_id].erro = str(e)

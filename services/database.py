@@ -35,6 +35,7 @@ async def get_db():
 
 async def init_db():
     from models.db_models import User, Arte, Variacao, ChatMessage  # noqa: F401
+    from models.push_subscription import PushSubscription  # noqa: F401
 
     async with engine.begin() as conn:
         await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))

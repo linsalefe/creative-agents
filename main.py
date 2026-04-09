@@ -14,6 +14,7 @@ from routers.auth import router as auth_router
 from routers.artes import router as artes_router
 from routers.chat import router as chat_router
 from routers.videos import router as videos_router
+from routers.notifications import router as notifications_router
 
 logger = logging.getLogger(__name__)
 
@@ -90,6 +91,7 @@ app.include_router(criativos_router, prefix="/api")
 app.include_router(artes_router, prefix="/api")
 app.include_router(chat_router, prefix="/api")
 app.include_router(videos_router, prefix="/api")
+app.include_router(notifications_router, prefix="/api")
 
 # Serve generated images
 images_dir = os.path.join(os.path.dirname(__file__), "generated_images")
