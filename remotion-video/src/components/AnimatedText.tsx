@@ -3,7 +3,7 @@ import { useCurrentFrame, interpolate, spring, useVideoConfig } from "remotion";
 
 type Props = {
   text: string;
-  animation: "fade_in" | "slide_up" | "typewriter" | "scale_in";
+  animation: "fade_in" | "slide_up" | "typewriter" | "scale_in" | "word_reveal";
   startFrame: number;
   durationFrames: number;
   fontSize: number;
@@ -11,6 +11,13 @@ type Props = {
   position: "top" | "center" | "bottom";
   fontFamily?: string;
 };
+
+/* ------------------------------------------------------------------ */
+/*  Meta Ads safe zones: ~14% top, ~20% bottom are covered by UI      */
+/* ------------------------------------------------------------------ */
+const SAFE_TOP = "18%";
+const SAFE_CENTER = "45%";
+const SAFE_BOTTOM = "25%";
 
 export const AnimatedText: React.FC<Props> = ({
   text,
@@ -29,15 +36,10 @@ export const AnimatedText: React.FC<Props> = ({
   if (relativeFrame < 0 || relativeFrame > durationFrames) return null;
 
   const positionStyle: React.CSSProperties = {
-    top: position === "top" ? "10%" : position === "center" ? "50%" : undefined,
-    bottom: position === "bottom" ? "15%" : undefined,
+    top: position === "top" ? SAFE_TOP : position === "center" ? SAFE_CENTER : undefined,
+    bottom: position === "bottom" ? SAFE_BOTTOM : undefined,
     transform: position === "center" ? "translateY(-50%)" : undefined,
   };
-
-  let opacity = 1;
-  let translateY = 0;
-  let scale = 1;
-  let displayText = text;
 
   // Fade out in last 10 frames
   const fadeOutStart = durationFrames - 10;
@@ -47,6 +49,77 @@ export const AnimatedText: React.FC<Props> = ({
           extrapolateRight: "clamp",
         })
       : 1;
+
+  // Word-by-word reveal animation
+  if (animation === "word_reveal") {
+    const words = text.split(" ");
+    const framesPerWord = Math.max(4, Math.floor((durationFrames * 0.5) / words.length));
+
+    return (
+      <div
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          display: "flex",
+          justifyContent: "center",
+          padding: "0 60px",
+          ...positionStyle,
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            justifyContent: "center",
+            gap: `0 ${fontSize * 0.3}px`,
+            opacity: fadeOut,
+          }}
+        >
+          {words.map((word, i) => {
+            const wordStart = i * framesPerWord;
+            const wordProgress = interpolate(
+              relativeFrame,
+              [wordStart, wordStart + 6],
+              [0, 1],
+              { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
+            );
+            const wordY = interpolate(
+              relativeFrame,
+              [wordStart, wordStart + 6],
+              [20, 0],
+              { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
+            );
+
+            return (
+              <span
+                key={i}
+                style={{
+                  fontSize,
+                  fontFamily,
+                  fontWeight: 800,
+                  color,
+                  opacity: wordProgress,
+                  transform: `translateY(${wordY}px)`,
+                  textShadow: `0 0 8px rgba(0,0,0,0.8), 0 2px 4px rgba(0,0,0,0.9)`,
+                  WebkitTextStroke: `1px rgba(0,0,0,0.3)`,
+                  lineHeight: 1.3,
+                  display: "inline-block",
+                }}
+              >
+                {word}
+              </span>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  let opacity = 1;
+  let translateY = 0;
+  let scale = 1;
+  let displayText = text;
 
   switch (animation) {
     case "fade_in":
@@ -105,13 +178,14 @@ export const AnimatedText: React.FC<Props> = ({
         style={{
           fontSize,
           fontFamily,
-          fontWeight: 700,
+          fontWeight: 800,
           color,
           opacity,
           transform: `translateY(${translateY}px) scale(${scale})`,
           textAlign: "center",
-          textShadow: "0 2px 20px rgba(0,0,0,0.5)",
-          lineHeight: 1.2,
+          textShadow: `0 0 8px rgba(0,0,0,0.8), 0 2px 4px rgba(0,0,0,0.9)`,
+          WebkitTextStroke: `1px rgba(0,0,0,0.3)`,
+          lineHeight: 1.25,
         }}
       >
         {displayText}

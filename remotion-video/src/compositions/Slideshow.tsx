@@ -1,11 +1,60 @@
 import React from "react";
-import { useVideoConfig, Sequence } from "remotion";
+import { useCurrentFrame, useVideoConfig, Sequence, spring } from "remotion";
 import { AnimatedText } from "../components/AnimatedText";
 import { CTAButton } from "../components/CTAButton";
 import { TransitionSlide } from "../components/TransitionSlide";
+import { ProgressBar } from "../components/ProgressBar";
+import { SwipeIndicator } from "../components/SwipeIndicator";
 import type { SlideshowProps } from "../types";
 
 const FONT_SIZES = { grande: 64, medio: 48, pequeno: 32 } as const;
+
+const SocialProof: React.FC<{
+  text: string;
+  color: string;
+  bgColor: string;
+  fps: number;
+}> = ({ text, color, bgColor, fps }) => {
+  const frame = useCurrentFrame();
+  const entrance = spring({
+    frame: frame - 8,
+    fps,
+    config: { damping: 14, stiffness: 100 },
+  });
+  if (frame < 8) return null;
+  return (
+    <div
+      style={{
+        position: "absolute",
+        top: "15%",
+        left: 0,
+        right: 0,
+        display: "flex",
+        justifyContent: "center",
+        zIndex: 80,
+        transform: `scale(${entrance})`,
+        opacity: Math.min(entrance, 1),
+      }}
+    >
+      <div
+        style={{
+          backgroundColor: `${bgColor}CC`,
+          backdropFilter: "blur(8px)",
+          padding: "10px 28px",
+          borderRadius: 50,
+          fontSize: 24,
+          fontFamily: "Inter, sans-serif",
+          fontWeight: 700,
+          color,
+          letterSpacing: "0.02em",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
+        }}
+      >
+        {text}
+      </div>
+    </div>
+  );
+};
 
 export const Slideshow: React.FC<SlideshowProps> = ({
   duracao_segundos,
@@ -15,6 +64,7 @@ export const Slideshow: React.FC<SlideshowProps> = ({
   fonte,
   textos,
   slides,
+  social_proof,
 }) => {
   const { width, height } = useVideoConfig();
 
@@ -32,6 +82,8 @@ export const Slideshow: React.FC<SlideshowProps> = ({
   const ctaTexto = textos.find((t) => t.tempo_inicio >= ctaThreshold);
   const normalTextos = textos.filter((t) => t.tempo_inicio < ctaThreshold);
 
+  const swipeStartFrame = ctaTexto ? Math.round(ctaTexto.tempo_inicio * fps) + 10 : Math.round((duracao_segundos - 2) * fps);
+
   return (
     <div style={{ width, height, overflow: "hidden", backgroundColor: "#000" }}>
       {/* Slides with transitions */}
@@ -47,7 +99,7 @@ export const Slideshow: React.FC<SlideshowProps> = ({
         </Sequence>
       ))}
 
-      {/* Dark overlay */}
+      {/* Dark overlay — stronger for text readability */}
       <div
         style={{
           position: "absolute",
@@ -56,10 +108,18 @@ export const Slideshow: React.FC<SlideshowProps> = ({
           width,
           height,
           background:
-            "linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, transparent 30%, transparent 70%, rgba(0,0,0,0.4) 100%)",
+            "linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, transparent 25%, transparent 60%, rgba(0,0,0,0.55) 100%)",
           pointerEvents: "none",
         }}
       />
+
+      {/* Progress bar */}
+      <ProgressBar color={cor_primaria} />
+
+      {/* Social proof badge */}
+      {social_proof && (
+        <SocialProof text={social_proof} color={cor_texto} bgColor={cor_primaria} fps={fps} />
+      )}
 
       {/* Text overlays */}
       {normalTextos.map((texto, i) => {
@@ -96,6 +156,9 @@ export const Slideshow: React.FC<SlideshowProps> = ({
           />
         </Sequence>
       )}
+
+      {/* Swipe indicator */}
+      <SwipeIndicator color={cor_texto} startFrame={swipeStartFrame} />
     </div>
   );
 };

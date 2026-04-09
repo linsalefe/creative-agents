@@ -45,7 +45,7 @@ export const CTAButton: React.FC<Props> = ({
     <div
       style={{
         position: "absolute",
-        bottom: "12%",
+        bottom: "22%",
         left: 0,
         right: 0,
         display: "flex",

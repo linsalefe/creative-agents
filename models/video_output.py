@@ -16,7 +16,7 @@ class VideoTextOverlay(BaseModel):
     texto: str
     tempo_inicio: float
     tempo_fim: float
-    animacao: Literal["fade_in", "slide_up", "typewriter", "scale_in"] = "fade_in"
+    animacao: Literal["fade_in", "slide_up", "typewriter", "scale_in", "word_reveal"] = "fade_in"
     posicao: Literal["top", "center", "bottom"] = "center"
     tamanho: Literal["grande", "medio", "pequeno"] = "grande"
 
@@ -44,6 +44,7 @@ class VideoScript(BaseModel):
     direcao_pan: Literal["left", "right", "up", "down"] = "right"
     background_tipo: Literal["gradiente", "solido", "imagem"] = "gradiente"
     elementos_decorativos: bool = True
+    social_proof: Optional[str] = None
 
 
 class VideoOutput(BaseModel):

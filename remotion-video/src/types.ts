@@ -2,7 +2,7 @@ export interface VideoTextOverlay {
   texto: string;
   tempo_inicio: number;
   tempo_fim: number;
-  animacao: "fade_in" | "slide_up" | "typewriter" | "scale_in";
+  animacao: "fade_in" | "slide_up" | "typewriter" | "scale_in" | "word_reveal";
   posicao: "top" | "center" | "bottom";
   tamanho: "grande" | "medio" | "pequeno";
 }
@@ -28,6 +28,7 @@ export interface KenBurnsProps {
   zoom_inicio: number;
   zoom_fim: number;
   direcao_pan: "left" | "right" | "up" | "down";
+  social_proof?: string;
 }
 
 export interface SlideshowProps {
@@ -42,6 +43,7 @@ export interface SlideshowProps {
   fonte: string;
   textos: VideoTextOverlay[];
   slides: VideoSlide[];
+  social_proof?: string;
 }
 
 export interface MotionGraphicsProps {
@@ -57,4 +59,5 @@ export interface MotionGraphicsProps {
   textos: VideoTextOverlay[];
   background_tipo: "gradiente" | "solido" | "imagem";
   elementos_decorativos: boolean;
+  social_proof?: string;
 }

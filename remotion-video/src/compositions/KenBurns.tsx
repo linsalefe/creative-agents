@@ -5,12 +5,62 @@ import {
   interpolate,
   Sequence,
   Img,
+  spring,
 } from "remotion";
 import { AnimatedText } from "../components/AnimatedText";
 import { CTAButton } from "../components/CTAButton";
+import { ProgressBar } from "../components/ProgressBar";
+import { SwipeIndicator } from "../components/SwipeIndicator";
 import type { KenBurnsProps } from "../types";
 
 const FONT_SIZES = { grande: 64, medio: 48, pequeno: 32 } as const;
+
+const SocialProof: React.FC<{
+  text: string;
+  color: string;
+  bgColor: string;
+  fps: number;
+}> = ({ text, color, bgColor, fps }) => {
+  const frame = useCurrentFrame();
+  const entrance = spring({
+    frame: frame - 8,
+    fps,
+    config: { damping: 14, stiffness: 100 },
+  });
+  if (frame < 8) return null;
+  return (
+    <div
+      style={{
+        position: "absolute",
+        top: "15%",
+        left: 0,
+        right: 0,
+        display: "flex",
+        justifyContent: "center",
+        zIndex: 80,
+        transform: `scale(${entrance})`,
+        opacity: Math.min(entrance, 1),
+      }}
+    >
+      <div
+        style={{
+          backgroundColor: `${bgColor}CC`,
+          backdropFilter: "blur(8px)",
+          padding: "10px 28px",
+          borderRadius: 50,
+          fontSize: 24,
+          fontFamily: "Inter, sans-serif",
+          fontWeight: 700,
+          color,
+          letterSpacing: "0.02em",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
+        }}
+      >
+        {text}
+      </div>
+    </div>
+  );
+};
 
 export const KenBurns: React.FC<KenBurnsProps> = ({
   duracao_segundos,
@@ -23,6 +73,7 @@ export const KenBurns: React.FC<KenBurnsProps> = ({
   zoom_inicio,
   zoom_fim,
   direcao_pan,
+  social_proof,
 }) => {
   const frame = useCurrentFrame();
   const { width, height, durationInFrames } = useVideoConfig();
@@ -32,7 +83,7 @@ export const KenBurns: React.FC<KenBurnsProps> = ({
     extrapolateRight: "clamp",
   });
 
-  const panAmount = 40; // pixels
+  const panAmount = 40;
   let translateX = 0;
   let translateY = 0;
 
@@ -56,6 +107,9 @@ export const KenBurns: React.FC<KenBurnsProps> = ({
   const ctaTexto = textos.find((t) => t.tempo_inicio >= ctaThreshold);
   const normalTextos = textos.filter((t) => t.tempo_inicio < ctaThreshold);
 
+  // Swipe indicator starts with CTA
+  const swipeStartFrame = ctaTexto ? Math.round(ctaTexto.tempo_inicio * fps) + 10 : durationInFrames - fps * 2;
+
   return (
     <div style={{ width, height, overflow: "hidden", backgroundColor: "#000" }}>
       {/* Background image with Ken Burns effect */}
@@ -75,7 +129,7 @@ export const KenBurns: React.FC<KenBurnsProps> = ({
         </div>
       )}
 
-      {/* Dark overlay for text readability */}
+      {/* Dark overlay for text readability — stronger for Meta Ads */}
       <div
         style={{
           position: "absolute",
@@ -84,9 +138,17 @@ export const KenBurns: React.FC<KenBurnsProps> = ({
           width,
           height,
           background:
-            "linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.1) 40%, rgba(0,0,0,0.1) 60%, rgba(0,0,0,0.5) 100%)",
+            "linear-gradient(to bottom, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.1) 35%, rgba(0,0,0,0.1) 55%, rgba(0,0,0,0.6) 100%)",
         }}
       />
+
+      {/* Progress bar */}
+      <ProgressBar color={cor_primaria} />
+
+      {/* Social proof badge */}
+      {social_proof && (
+        <SocialProof text={social_proof} color={cor_texto} bgColor={cor_primaria} fps={fps} />
+      )}
 
       {/* Text overlays */}
       {normalTextos.map((texto, i) => {
@@ -123,6 +185,9 @@ export const KenBurns: React.FC<KenBurnsProps> = ({
           />
         </Sequence>
       )}
+
+      {/* Swipe up indicator */}
+      <SwipeIndicator color={cor_texto} startFrame={swipeStartFrame} />
     </div>
   );
 };
