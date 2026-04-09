@@ -1,8 +1,11 @@
 import asyncio
+import logging
 import os
 import uuid
 
 from dotenv import load_dotenv
+
+logger = logging.getLogger(__name__)
 
 from models.creative_request import CreativeRequest
 from models.creative_output import CreativeOutput
@@ -195,7 +198,7 @@ class Orchestrator:
                             formato=formato,
                         )
                 except Exception as e:
-                    print(f"Edicao de imagem falhou para variacao: {e}")
+                    logger.error("Edicao de imagem falhou para variacao", exc_info=True)
                     return VariationItem(copy=copy_var, imagem_url=None, formato=formato)
 
         variacoes = await asyncio.gather(

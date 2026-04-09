@@ -57,7 +57,7 @@ class BannerbearService:
         }
 
         logger.info("Bannerbear: enviando para template %s", template_uid)
-        print(f"Payload enviado ao Bannerbear: {json.dumps(payload, indent=2)}")
+        logger.debug("Payload enviado ao Bannerbear: %s", json.dumps(payload, indent=2))
 
         try:
             async with httpx.AsyncClient(timeout=120) as client:
@@ -66,7 +66,6 @@ class BannerbearService:
                 )
                 if response.status_code >= 400:
                     response_text = response.text
-                    print(f"Bannerbear error response ({response.status_code}): {response_text}")
                     logger.error("Bannerbear erro %s: %s", response.status_code, response_text)
                     response.raise_for_status()
 
@@ -81,7 +80,6 @@ class BannerbearService:
                     )
                     if status_resp.status_code >= 400:
                         response_text = status_resp.text
-                        print(f"Bannerbear polling error ({status_resp.status_code}): {response_text}")
                         logger.error("Bannerbear polling erro %s: %s", status_resp.status_code, response_text)
                         status_resp.raise_for_status()
 
@@ -93,12 +91,11 @@ class BannerbearService:
 
             raise TimeoutError("Bannerbear não completou o processamento a tempo")
 
-        except httpx.HTTPStatusError as e:
-            print(f"Bannerbear HTTPStatusError: {e}")
+        except httpx.HTTPStatusError:
+            logger.error("Bannerbear HTTPStatusError", exc_info=True)
             raise
-        except Exception as e:
-            print(f"Bannerbear erro inesperado: {e}")
-            logger.exception("Bannerbear erro inesperado")
+        except Exception:
+            logger.error("Bannerbear erro inesperado", exc_info=True)
             raise
 
     async def create_variants(

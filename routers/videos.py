@@ -1,18 +1,26 @@
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, UploadFile, File, Form
-from sqlalchemy.ext.asyncio import AsyncSession
+import logging
+import os
+import uuid
 from datetime import datetime
 from typing import Literal, Optional
-import uuid
-import os
+
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Request, UploadFile, File, Form
+from pydantic import BaseModel
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.video_output import VideoRequest, VideoOutput
 from models.db_models import User
 from agents.video_pipeline_agent import VideoPipelineAgent
 from routers.auth import get_current_user
 from services.database import get_db
-from pydantic import BaseModel
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/videos", tags=["videos"])
+
+limiter = Limiter(key_func=get_remote_address)
 
 CREDIT_COST = 20
 
@@ -65,13 +73,15 @@ async def _processar_video_job(job_id: str, request: VideoRequest):
         video_jobs[job_id].status = "failed"
         video_jobs[job_id].erro = str(e)
         video_jobs[job_id].completed_at = datetime.utcnow().isoformat()
-        print(f"Video job {job_id} falhou: {e}")
+        logger.error("Video job %s falhou", job_id, exc_info=True)
 
 # ---------------------------------------------------------------------------
 # Endpoints
 # ---------------------------------------------------------------------------
 @router.post("/gerar")
+@limiter.limit("5/minute")
 async def gerar_video(
+    request: Request,
     background_tasks: BackgroundTasks,
     produto: str = Form(...),
     publico: str = Form(...),
@@ -131,13 +141,20 @@ async def status_video_job(
     """Retorna o status atual de um job de vídeo."""
     if job_id not in video_jobs:
         raise HTTPException(status_code=404, detail="Job não encontrado")
-    return video_jobs[job_id]
+    job = video_jobs[job_id]
+    if job.user_id != user.id:
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    return job
 
 
 @router.get("/historico")
 async def listar_historico(user: User = Depends(get_current_user)):
-    """Lista vídeos gerados."""
-    return list(video_historico.values())
+    """Lista vídeos gerados pelo usuário logado."""
+    user_jobs = [
+        j.resultado for j in video_jobs.values()
+        if j.user_id == user.id and j.status == "completed" and j.resultado
+    ]
+    return user_jobs
 
 
 @router.get("/{video_id}", response_model=VideoOutput)

@@ -1,4 +1,4 @@
-import subprocess
+import asyncio
 import json
 import os
 import uuid
@@ -41,13 +41,18 @@ class RemotionService:
             "--concurrency", "2",
         ]
 
-        process = subprocess.Popen(
-            cmd,
+        process = await asyncio.create_subprocess_exec(
+            *cmd,
             cwd=self.remotion_dir,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
         )
-        stdout, stderr = process.communicate(timeout=120)
+        try:
+            stdout, stderr = await asyncio.wait_for(process.communicate(), timeout=120)
+        except asyncio.TimeoutError:
+            process.kill()
+            await process.communicate()
+            raise RuntimeError("Remotion render timed out after 120s")
 
         if process.returncode != 0:
             raise RuntimeError(
@@ -79,13 +84,18 @@ class RemotionService:
             "--frame", str(frame),
         ]
 
-        process = subprocess.Popen(
-            cmd,
+        process = await asyncio.create_subprocess_exec(
+            *cmd,
             cwd=self.remotion_dir,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
         )
-        stdout, stderr = process.communicate(timeout=60)
+        try:
+            stdout, stderr = await asyncio.wait_for(process.communicate(), timeout=60)
+        except asyncio.TimeoutError:
+            process.kill()
+            await process.communicate()
+            raise RuntimeError("Remotion still timed out after 60s")
 
         if process.returncode != 0:
             raise RuntimeError(

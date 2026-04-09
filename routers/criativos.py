@@ -1,8 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, BackgroundTasks
-from sqlalchemy.ext.asyncio import AsyncSession
+import logging
 import uuid
 from datetime import datetime
 from typing import Literal
+
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, BackgroundTasks, Request
+from pydantic import BaseModel
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.creative_request import CreativeRequest
 from models.creative_output import CreativeOutput
@@ -11,9 +16,12 @@ from models.db_models import User
 from agents.orchestrator import Orchestrator
 from routers.auth import get_current_user
 from services.database import get_db
-from pydantic import BaseModel
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/criativos", tags=["criativos"])
+
+limiter = Limiter(key_func=get_remote_address)
 
 CREDIT_COST = 10
 
@@ -70,41 +78,47 @@ async def _processar_job(job_id: str, image_data: bytes, mime_type: str, formato
         jobs[job_id].status = "failed"
         jobs[job_id].erro = str(e)
         jobs[job_id].completed_at = datetime.utcnow().isoformat()
-        print(f"Job {job_id} falhou: {e}")
+        logger.error("Job %s falhou", job_id, exc_info=True)
 
 # ---------------------------------------------------------------------------
 # Endpoints existentes (sem alteração)
 # ---------------------------------------------------------------------------
 @router.post("/gerar", response_model=CreativeOutput)
+@limiter.limit("10/minute")
 async def gerar_criativo(
-    request: CreativeRequest,
+    request: Request,
+    creative_request: CreativeRequest,
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Gera criativo completo passando por todos os agentes do pipeline."""
     await _check_and_deduct_credits(user, db)
     try:
-        resultado = await orchestrator.gerar_criativo(request)
+        resultado = await orchestrator.gerar_criativo(creative_request)
         historico[resultado.id] = resultado
         return resultado
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("Erro ao gerar criativo", exc_info=True)
+        raise HTTPException(status_code=500, detail="Erro ao processar requisição. Tente novamente.")
 
 
 @router.post("/gerar/rapido", response_model=CreativeOutput)
+@limiter.limit("10/minute")
 async def gerar_rapido(
-    request: CreativeRequest,
+    request: Request,
+    creative_request: CreativeRequest,
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Gera criativo rapido (sem direcao de arte detalhada)."""
     await _check_and_deduct_credits(user, db)
     try:
-        resultado = await orchestrator.gerar_rapido(request)
+        resultado = await orchestrator.gerar_rapido(creative_request)
         historico[resultado.id] = resultado
         return resultado
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("Erro ao gerar criativo rapido", exc_info=True)
+        raise HTTPException(status_code=500, detail="Erro ao processar requisição. Tente novamente.")
 
 
 @router.get("/historico/", response_model=list[CreativeOutput])
@@ -125,7 +139,9 @@ async def buscar_criativo(
 # NOVO: Variações com Job Queue
 # ---------------------------------------------------------------------------
 @router.post("/variacoes")
+@limiter.limit("5/minute")
 async def iniciar_variacoes(
+    request: Request,
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     formato: str = Form(default="ambos"),
@@ -165,9 +181,8 @@ async def status_job(
 
     job = jobs[job_id]
 
-    # Segurança: só o dono pode ver o job
-    if job.user_id != user.id and True:  # relaxar para admin se necessário
-        pass  # manter simples por ora
+    if job.user_id != user.id:
+        raise HTTPException(status_code=403, detail="Acesso negado")
 
     return job
 

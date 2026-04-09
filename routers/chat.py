@@ -1,9 +1,10 @@
 import json
+import logging
 import os
 import uuid
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -14,6 +15,8 @@ from routers.auth import get_current_user
 from services.database import get_db
 from services.embedding_service import EmbeddingService
 from services.gemini_service import GeminiService
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
@@ -45,6 +48,13 @@ Se o usuario quiser gerar uma arte mas nao tiver referencia, sugira que suba uma
 
 class MessageRequest(BaseModel):
     content: str
+
+    @field_validator("content")
+    @classmethod
+    def validate_content(cls, v: str) -> str:
+        if len(v) > 5000:
+            raise ValueError("Mensagem excede o limite de 5000 caracteres")
+        return v
 
 
 class MessageResponse(BaseModel):
@@ -90,7 +100,7 @@ async def search_similar_artes(
         rows = result.fetchall()
         return [(row.id, row.filename, row.file_path, row.analise_json, row.tags, row.similarity) for row in rows]
     except Exception as e:
-        print(f"Similarity search failed: {e}")
+        logger.error("Similarity search failed", exc_info=True)
         return []
 
 
@@ -165,9 +175,10 @@ async def send_message(
                         imagem_url = var_urls[0]
 
                 except Exception as e:
+                    logger.error("Erro ao gerar variacoes via chat", exc_info=True)
                     response_content = (
                         f"Encontrei a arte \"{filename}\" como referencia, "
-                        f"mas houve um erro ao gerar variacoes: {str(e)}"
+                        f"mas houve um erro ao gerar variacoes. Tente novamente."
                     )
             else:
                 response_content = (

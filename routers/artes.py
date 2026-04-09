@@ -1,4 +1,4 @@
-import json
+import logging
 import os
 import uuid
 
@@ -13,7 +13,35 @@ from routers.auth import get_current_user
 from services.database import get_db
 from services.embedding_service import EmbeddingService
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/artes", tags=["artes"])
+
+MAX_UPLOAD_SIZE = 10 * 1024 * 1024  # 10MB
+
+ALLOWED_MAGIC_BYTES = {
+    b"\x89PNG\r\n\x1a\n": ("image/png", "png"),
+    b"\xff\xd8\xff": ("image/jpeg", "jpeg"),
+    b"RIFF": ("image/webp", "webp"),  # WebP starts with RIFF....WEBP
+}
+
+
+def _validate_image(data: bytes) -> tuple[str, str]:
+    """Validate image by magic bytes. Returns (mime_type, extension)."""
+    if len(data) > MAX_UPLOAD_SIZE:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Arquivo excede o tamanho máximo de {MAX_UPLOAD_SIZE // (1024*1024)}MB",
+        )
+    for magic, (mime, ext) in ALLOWED_MAGIC_BYTES.items():
+        if data[:len(magic)] == magic:
+            if mime == "image/webp" and data[8:12] != b"WEBP":
+                continue
+            return mime, ext
+    raise HTTPException(
+        status_code=400,
+        detail="Tipo de arquivo não permitido. Aceitos: PNG, JPEG, WebP.",
+    )
 
 vision_agent = VisionAgent()
 embedding_service = EmbeddingService()
@@ -50,10 +78,7 @@ async def upload_arte(
     db: AsyncSession = Depends(get_db),
 ):
     image_data = await file.read()
-    mime_type = file.content_type or "image/png"
-
-    # Save file
-    ext = mime_type.split("/")[-1] if "/" in mime_type else "png"
+    mime_type, ext = _validate_image(image_data)
     filename = f"{uuid.uuid4()}.{ext}"
     filepath = os.path.join(UPLOAD_DIR, filename)
     with open(filepath, "wb") as f:
@@ -64,7 +89,7 @@ async def upload_arte(
         analise = await vision_agent.run(image_data=image_data, mime_type=mime_type)
         analise_dict = analise.model_dump()
     except Exception as e:
-        print(f"Vision analysis failed: {e}")
+        logger.error("Vision analysis failed", exc_info=True)
         analise_dict = None
 
     # Generate embedding
@@ -73,7 +98,7 @@ async def upload_arte(
         try:
             embedding = await embedding_service.embed_analysis(analise_dict)
         except Exception as e:
-            print(f"Embedding generation failed: {e}")
+            logger.error("Embedding generation failed", exc_info=True)
 
     # Parse tags
     tag_list = [t.strip() for t in tags.split(",") if t.strip()] if tags else []

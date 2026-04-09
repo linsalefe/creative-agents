@@ -1,15 +1,23 @@
+import logging
 import os
 
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 
 from routers.criativos import router as criativos_router
 from routers.auth import router as auth_router
 from routers.artes import router as artes_router
 from routers.chat import router as chat_router
 from routers.videos import router as videos_router
+
+logger = logging.getLogger(__name__)
+
+limiter = Limiter(key_func=get_remote_address)
 
 
 @asynccontextmanager
@@ -23,6 +31,14 @@ async def lifespan(app: FastAPI):
 
 async def seed_admin():
     """Create default admin user if not exists."""
+    admin_password = os.getenv("ADMIN_DEFAULT_PASSWORD")
+    if not admin_password:
+        logger.warning(
+            "ADMIN_DEFAULT_PASSWORD not set — skipping admin user creation. "
+            "Set this env var to create a default admin on startup."
+        )
+        return
+
     from sqlalchemy import select
     from passlib.context import CryptContext
     from services.database import SessionLocal
@@ -36,14 +52,14 @@ async def seed_admin():
             admin = User(
                 name="Admin CENAT",
                 email="admin@cenat.com.br",
-                password_hash=pwd_context.hash("cenat2026"),
+                password_hash=pwd_context.hash(admin_password),
                 role="admin",
                 credits=999999,
                 is_active=True,
             )
             db.add(admin)
             await db.commit()
-            print("Admin user created: admin@cenat.com.br")
+            logger.info("Admin user created: admin@cenat.com.br")
 
 
 app = FastAPI(
@@ -52,6 +68,9 @@ app = FastAPI(
     version="2.0.0",
     lifespan=lifespan,
 )
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
     CORSMiddleware,
