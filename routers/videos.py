@@ -107,7 +107,7 @@ async def gerar_video(
         content = await file.read()
         with open(filepath, "wb") as f:
             f.write(content)
-        imagem_url = f"file://{filepath}"
+        imagem_url = f"http://127.0.0.1:8000/static/images/{filename}"
 
     request = VideoRequest(
         produto=produto,
