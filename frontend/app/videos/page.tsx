@@ -14,7 +14,19 @@ import {
   Type,
   Copy,
   Check,
+  CloudUpload,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { AppShell } from "@/components/app-shell";
 import { useAuth } from "@/contexts/auth-context";
 import api from "@/lib/api";
@@ -97,6 +109,11 @@ export default function VideosPage() {
   const [historico, setHistorico] = useState<VideoOutput[]>([]);
   const [loadingHistorico, setLoadingHistorico] = useState(true);
   const [copied, setCopied] = useState(false);
+
+  // Drive export
+  const [driveExportOpen, setDriveExportOpen] = useState(false);
+  const [driveExportProduto, setDriveExportProduto] = useState("");
+  const [driveExporting, setDriveExporting] = useState(false);
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -187,6 +204,38 @@ export default function VideosPage() {
     setCopied(true);
     toast.success("Legenda copiada!");
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleExportVideoDrive = async () => {
+    if (!currentVideo) return;
+    try {
+      const statusRes = await api.get("/drive/status");
+      if (!statusRes.data.connected) {
+        toast.error("Conecte seu Google Drive em Configurações");
+        return;
+      }
+      setDriveExportProduto(produto || "");
+      setDriveExportOpen(true);
+    } catch {
+      toast.error("Erro ao verificar conexão com Drive");
+    }
+  };
+
+  const handleConfirmExportVideoDrive = async () => {
+    if (!currentVideo || !driveExportProduto.trim()) return;
+    try {
+      setDriveExporting(true);
+      const res = await api.post("/drive/export-video", {
+        produto_nome: driveExportProduto.trim(),
+        file_path: currentVideo.video_url,
+      });
+      toast.success(`Exportado para ${res.data.path}`);
+      setDriveExportOpen(false);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || "Erro ao exportar para Drive");
+    } finally {
+      setDriveExporting(false);
+    }
   };
 
   if (authLoading || !user) return null;
@@ -451,6 +500,14 @@ export default function VideosPage() {
                     Download MP4
                   </a>
                   <button
+                    onClick={handleExportVideoDrive}
+                    className="flex-1 py-2.5 rounded-lg border border-blue-500/30 text-blue-400 font-medium text-sm
+                               hover:bg-blue-500/10 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <CloudUpload className="w-4 h-4" />
+                    Exportar Drive
+                  </button>
+                  <button
                     onClick={() => {
                       setCurrentVideo(null);
                     }}
@@ -527,6 +584,45 @@ export default function VideosPage() {
           </div>
         </div>
       </div>
+
+      {/* Drive Export Dialog */}
+      <Dialog open={driveExportOpen} onOpenChange={setDriveExportOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CloudUpload className="w-5 h-5 text-blue-400" />
+              Exportar Vídeo para Drive
+            </DialogTitle>
+            <DialogDescription>
+              O vídeo será salvo em Creative Machine / {driveExportProduto || "..."} / Video N
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <Label htmlFor="drive-video-produto">Nome do produto</Label>
+              <Input
+                id="drive-video-produto"
+                placeholder="Ex: Formação em Psicologia"
+                value={driveExportProduto}
+                onChange={(e) => setDriveExportProduto(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDriveExportOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleConfirmExportVideoDrive}
+              loading={driveExporting}
+              disabled={!driveExportProduto.trim()}
+            >
+              <CloudUpload className="w-4 h-4" />
+              Exportar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppShell>
   );
 }

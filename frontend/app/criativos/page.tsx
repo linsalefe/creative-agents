@@ -14,6 +14,14 @@ import {
 import { CopyPreview } from "@/components/criativos/CopyPreview";
 import { CriativoCard } from "@/components/criativos/CriativoCard";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
   Sparkles,
   Target,
   Palette,
@@ -28,7 +36,9 @@ import {
   Upload,
   X,
   ImageIcon,
+  CloudUpload,
 } from "lucide-react";
+import { toast } from "sonner";
 import api from "@/lib/api";
 
 function resolveUrl(url: string) {
@@ -145,6 +155,11 @@ export default function CriativosPage() {
       status: "pending" as const,
     }))
   );
+
+  // Drive export
+  const [driveExportOpen, setDriveExportOpen] = useState(false);
+  const [driveExportProduto, setDriveExportProduto] = useState("");
+  const [driveExporting, setDriveExporting] = useState(false);
 
   useEffect(() => {
     fetchHistorico();
@@ -317,6 +332,43 @@ export default function CriativosPage() {
     window.URL.revokeObjectURL(blobUrl);
   };
 
+  const handleExportDrive = async () => {
+    if (!result) return;
+    try {
+      const statusRes = await api.get("/drive/status");
+      if (!statusRes.data.connected) {
+        toast.error("Conecte seu Google Drive em Configurações");
+        return;
+      }
+      setDriveExportProduto(produto || "");
+      setDriveExportOpen(true);
+    } catch {
+      toast.error("Erro ao verificar conexão com Drive");
+    }
+  };
+
+  const handleConfirmExportDrive = async () => {
+    if (!result || !driveExportProduto.trim()) return;
+    try {
+      setDriveExporting(true);
+      const filePaths: string[] = [];
+      if (result.imagem.criativo_final_url) filePaths.push(result.imagem.criativo_final_url);
+      if (result.imagem.imagem_url) filePaths.push(result.imagem.imagem_url);
+      result.imagem.variantes_urls?.forEach((url) => { if (url) filePaths.push(url); });
+
+      const res = await api.post("/drive/export", {
+        produto_nome: driveExportProduto.trim(),
+        file_paths: filePaths,
+      });
+      toast.success(`Exportado para ${res.data.path}`);
+      setDriveExportOpen(false);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || "Erro ao exportar para Drive");
+    } finally {
+      setDriveExporting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-bg">
       {/* Header */}
@@ -449,14 +501,23 @@ export default function CriativosPage() {
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <Badge variant="accent">{result.formato.dimensoes}</Badge>
-                    <a
-                      href={result.imagem.imagem_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-accent hover:text-accent-light transition-colors"
-                    >
-                      Abrir original
-                    </a>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={handleExportDrive}
+                        className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
+                      >
+                        <CloudUpload className="w-3.5 h-3.5" />
+                        Exportar para Drive
+                      </button>
+                      <a
+                        href={result.imagem.imagem_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-accent hover:text-accent-light transition-colors"
+                      >
+                        Abrir original
+                      </a>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -759,6 +820,48 @@ export default function CriativosPage() {
           </section>
         )}
       </main>
+
+      {/* Drive Export Dialog */}
+      <Dialog open={driveExportOpen} onOpenChange={setDriveExportOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CloudUpload className="w-5 h-5 text-blue-400" />
+              Exportar para Google Drive
+            </DialogTitle>
+            <DialogDescription>
+              O criativo será salvo em Creative Machine / {driveExportProduto || "..."} / Criativo N
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <Label htmlFor="drive-produto">Nome do produto</Label>
+              <Input
+                id="drive-produto"
+                placeholder="Ex: Formação em Psicologia"
+                value={driveExportProduto}
+                onChange={(e) => setDriveExportProduto(e.target.value)}
+              />
+            </div>
+            <p className="text-xs text-text-muted">
+              O número do criativo será incrementado automaticamente.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDriveExportOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleConfirmExportDrive}
+              loading={driveExporting}
+              disabled={!driveExportProduto.trim()}
+            >
+              <CloudUpload className="w-4 h-4" />
+              Exportar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

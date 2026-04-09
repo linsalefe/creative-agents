@@ -36,6 +36,8 @@ import {
   Layers,
   FolderOpen,
   ImagePlus,
+  CloudUpload,
+  Check,
 } from "lucide-react";
 
 function resolveUrl(url: string) {
@@ -99,6 +101,12 @@ function BibliotecaContent() {
   const [uploading, setUploading] = useState(false);
   const [dragging, setDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Selection & Drive export
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [driveExportOpen, setDriveExportOpen] = useState(false);
+  const [driveExportProduto, setDriveExportProduto] = useState("");
+  const [driveExporting, setDriveExporting] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -244,6 +252,54 @@ function BibliotecaContent() {
     router.replace(`/biblioteca${query ? `?${query}` : ""}`, { scroll: false });
   };
 
+  const toggleSelection = (id: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const handleExportSelectedDrive = async () => {
+    try {
+      const statusRes = await api.get("/drive/status");
+      if (!statusRes.data.connected) {
+        toast.error("Conecte seu Google Drive em Configurações");
+        return;
+      }
+      setDriveExportProduto("");
+      setDriveExportOpen(true);
+    } catch {
+      toast.error("Erro ao verificar conexão com Drive");
+    }
+  };
+
+  const handleConfirmExportSelectedDrive = async () => {
+    if (!driveExportProduto.trim() || selectedIds.size === 0) return;
+    try {
+      setDriveExporting(true);
+      const selectedArtes = artes.filter((a) => selectedIds.has(a.id));
+      const filePaths = selectedArtes.map((a) => a.file_path);
+
+      const res = await api.post("/drive/export", {
+        produto_nome: driveExportProduto.trim(),
+        file_paths: filePaths,
+      });
+      toast.success(`Exportados ${res.data.exportados} criativos para o Drive`);
+      setDriveExportOpen(false);
+      setSelectedIds(new Set());
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || "Erro ao exportar para Drive");
+    } finally {
+      setDriveExporting(false);
+    }
+  };
+
   if (authLoading || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -373,9 +429,25 @@ function BibliotecaContent() {
             {artes.map((arte) => (
               <div
                 key={arte.id}
-                className="group relative cursor-pointer rounded-xl overflow-hidden border border-border bg-white/[0.02] transition-all duration-300 hover:scale-[1.03] hover:shadow-xl hover:border-violet-500/20"
+                className={`group relative cursor-pointer rounded-xl overflow-hidden border bg-white/[0.02] transition-all duration-300 hover:scale-[1.03] hover:shadow-xl ${
+                  selectedIds.has(arte.id)
+                    ? "border-blue-500/50 ring-2 ring-blue-500/30"
+                    : "border-border hover:border-violet-500/20"
+                }`}
                 onClick={() => openDetail(arte)}
               >
+                {/* Selection checkbox */}
+                <button
+                  onClick={(e) => toggleSelection(arte.id, e)}
+                  className={`absolute top-2 left-2 z-10 w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all duration-200 ${
+                    selectedIds.has(arte.id)
+                      ? "bg-blue-500 border-blue-500 text-white"
+                      : "border-white/40 bg-black/30 backdrop-blur-sm opacity-0 group-hover:opacity-100 hover:border-white/60"
+                  }`}
+                >
+                  {selectedIds.has(arte.id) && <Check className="w-3.5 h-3.5" />}
+                </button>
+
                 {/* Image */}
                 <div className="aspect-square relative overflow-hidden">
                   <img
@@ -718,6 +790,74 @@ function BibliotecaContent() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Drive Export Dialog */}
+      <Dialog open={driveExportOpen} onOpenChange={setDriveExportOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CloudUpload className="w-5 h-5 text-blue-400" />
+              Exportar para Google Drive
+            </DialogTitle>
+            <DialogDescription>
+              {selectedIds.size} arte{selectedIds.size !== 1 ? "s" : ""} selecionada{selectedIds.size !== 1 ? "s" : ""} — serão salvas como Criativo 01, 02, etc.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <Label htmlFor="drive-bib-produto">Nome do produto</Label>
+              <Input
+                id="drive-bib-produto"
+                placeholder="Ex: Formação em Psicologia"
+                value={driveExportProduto}
+                onChange={(e) => setDriveExportProduto(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDriveExportOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleConfirmExportSelectedDrive}
+              loading={driveExporting}
+              disabled={!driveExportProduto.trim()}
+            >
+              <CloudUpload className="w-4 h-4" />
+              Exportar {selectedIds.size} arte{selectedIds.size !== 1 ? "s" : ""}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Selection action bar */}
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-fade-in">
+          <div className="flex items-center gap-4 px-6 py-3 rounded-2xl border border-border bg-card/95 backdrop-blur-lg shadow-2xl shadow-black/40">
+            <span className="text-sm font-medium text-foreground whitespace-nowrap">
+              {selectedIds.size} selecionada{selectedIds.size !== 1 ? "s" : ""}
+            </span>
+            <div className="w-px h-5 bg-border" />
+            <Button
+              size="sm"
+              onClick={handleExportSelectedDrive}
+              className="active:scale-[0.98] shadow-lg shadow-blue-600/20"
+            >
+              <CloudUpload className="w-4 h-4" />
+              Exportar para Drive
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedIds(new Set())}
+              className="text-muted-foreground"
+            >
+              <X className="w-4 h-4" />
+              Limpar
+            </Button>
+          </div>
+        </div>
+      )}
     </AppShell>
   );
 }
