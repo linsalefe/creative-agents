@@ -209,8 +209,20 @@ export default function VariacoesPage() {
             prev.map((s) => s.status === "active" ? { ...s, status: "pending" as StepStatus } : s)
           );
         }
-      } catch {
-        // Erro de rede — continua tentando
+      } catch (err: any) {
+        // 404 = job não existe mais (backend reiniciou) — parar polling
+        if (err?.response?.status === 404) {
+          clearInterval(pollingRef.current!);
+          pollingRef.current = null;
+          setJobStatus("failed");
+          setLoading(false);
+          localStorage.removeItem("variacoes_job_id");
+          toast.error("Job perdido — o servidor foi reiniciado. Tente novamente.");
+          setSteps((prev) =>
+            prev.map((s) => s.status === "active" ? { ...s, status: "pending" as StepStatus } : s)
+          );
+        }
+        // Outros erros de rede — continua tentando
       }
     }, 3000);
 
